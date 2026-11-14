@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>Quản lý vận tải HLT — Bản HTML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#eef1f4; --card:#ffffff; --ink:#1c2430; --ink2:#5b6572; --line:#dde3ea;
+    --brand:#b45309; --brand2:#d97706; --amber1:#f7b733; --amber2:#e07f13;
+    --good:#15803d; --bad:#dc2626; --warn:#b45309; --chip:#fdf3e3;
+    --input:#ffffff; --th:#f6f8fa; --shadow:0 1px 3px rgba(16,24,40,.08);
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14181d; --card:#1e242c; --ink:#e8edf2; --ink2:#9aa7b4; --line:#333d47;
+      --input:#232b34; --th:#262e37; --chip:#3a2c14; --shadow:0 1px 3px rgba(0,0,0,.4); }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+  button,[role="button"],select,input:not([type="checkbox"]){min-height:2.25rem}
+  button{cursor:pointer;font-family:inherit}
+  input,select,textarea{font-family:inherit;font-size:14px;background:var(--input);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.45rem .6rem;width:100%}
+  input:focus,select:focus{outline:2px solid var(--amber1);outline-offset:0;border-color:transparent}
+  label{font-size:12px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 16px 48px}
+
+  /* ---------- Login ---------- */
+  #loginScreen{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#2b1c07,#59390a 55%,#8a5a10);padding:16px}
+  .login-card{background:var(--card);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.35);width:100%;max-width:400px;padding:28px 26px}
+  .login-card h1{font-size:21px;margin:0 0 2px}
+  .login-card .sub{color:var(--ink2);font-size:13px;margin-bottom:18px}
+  .login-logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--amber1),var(--amber2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;color:#3a2403;margin-bottom:14px}
+  .login-card .field{margin-bottom:12px}
+  .btn-login{width:100%;background:linear-gradient(135deg,var(--amber1),var(--amber2));border:none;border-radius:9px;font-weight:700;font-size:15px;color:#2e1c02;padding:.65rem}
+  .login-err{display:none;background:#fdecec;color:#b91c1c;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:12px}
+  .login-hint{margin-top:16px;background:var(--th);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink2)}
+  .login-hint b{color:var(--ink)}
+  .login-note{margin-top:10px;font-size:12px;color:var(--ink2)}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px 0 12px}
+  .brand{display:flex;align-items:center;gap:11px;margin-right:auto}
+  .brand .mark{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--amber1),var(--amber2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#3a2403;font-size:19px}
+  .brand .name{font-weight:800;font-size:17px;line-height:1.15}
+  .brand .mst{font-size:12px;color:var(--ink2)}
+  .top-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:.45rem .8rem;font-weight:600;font-size:13px;box-shadow:var(--shadow)}
+  .btn.primary{background:linear-gradient(135deg,var(--amber1),var(--amber2));border:none;color:#2e1c02}
+  .btn.danger{color:var(--bad)}
+  .btn.small{padding:.3rem .6rem;min-height:2rem;font-size:12.5px}
+  .userbadge{background:var(--chip);color:var(--brand);border-radius:999px;padding:.4rem .75rem;font-weight:700;font-size:12.5px}
+  select.monthpick{width:auto;font-weight:700}
+
+  /* ---------- Summary band ---------- */
+  .band{background:linear-gradient(100deg,var(--amber1),var(--amber2) 70%,#c96a0d);border-radius:14px;color:#2e1c02;padding:20px 22px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;box-shadow:var(--shadow)}
+  .band .big small{display:block;font-size:13px;font-weight:600;opacity:.85}
+  .band .big .val{font-size:clamp(26px,4.5vw,40px);font-weight:800;letter-spacing:-.5px}
+  .band .stats{margin-left:auto;display:flex;flex-wrap:wrap;gap:22px}
+  .band .stats small{display:block;font-size:12px;font-weight:600;opacity:.85}
+  .band .stats .v{font-size:16px;font-weight:800}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:2px solid var(--line);margin:16px 0 18px;scrollbar-width:none}
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{background:none;border:none;border-bottom:3px solid transparent;padding:.6rem .8rem;font-weight:600;font-size:13.5px;color:var(--ink2);white-space:nowrap;min-height:2.75rem}
+  nav.tabs button.on{color:var(--brand);border-bottom-color:var(--brand2)}
+
+  /* ---------- Cards & tables ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 10px;font-size:14.5px}
+  .stat small{color:var(--ink2);font-size:12px;font-weight:600;display:block}
+  .stat .n{font-size:21px;font-weight:800;margin:2px 0}
+  .stat .d{font-size:12px;color:var(--ink2)}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+  .panel .phead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .panel .phead h3{margin:0;font-size:15px;margin-right:auto}
+  .twrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th{background:var(--th);text-align:left;padding:9px 10px;font-size:12px;color:var(--ink2);white-space:nowrap}
+  td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.overdue td{background:rgba(220,38,38,.06)}
+  .pill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:700}
+  .pill.hlt{background:#e7f6ec;color:#15803d}.pill.ngoai{background:#eef2ff;color:#3730a3}
+  .pill.qua{background:#fdecec;color:#b91c1c}.pill.ok{background:#e7f6ec;color:#15803d}.pill.wait{background:#fdf3e3;color:#b45309}
+  @media (prefers-color-scheme: dark){ .pill.ngoai{background:#26264a;color:#a5b4fc} }
+  .rowform{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--th)}
+  .rowform .wide{grid-column:span 2}
+  .rowform .act{display:flex;align-items:flex-end}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .toolbar input[type="search"]{width:220px}
+  .toolbar select{width:auto}
+  .totbar{display:flex;flex-wrap:wrap;gap:16px;padding:11px 16px;border-top:2px solid var(--line);font-weight:700;font-size:13px;background:var(--th)}
+  .muted{color:var(--ink2);font-size:12.5px}
+  .empty{padding:26px 16px;text-align:center;color:var(--ink2)}
+  .del{background:none;border:none;color:var(--bad);font-weight:700;padding:.3rem .5rem;min-height:2rem}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:860px){ .twocol{grid-template-columns:1fr} .rowform .wide{grid-column:span 1} }
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .kv:last-child{border-bottom:none}
+  .kv b{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .kv.total{font-weight:800;font-size:15px;border-top:2px solid var(--line);border-bottom:none;margin-top:4px;padding-top:10px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:#1c2430;color:#fff;padding:10px 18px;border-radius:10px;font-weight:600;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:92vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);max-width:min(860px,94vw);width:100%;padding:0;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  dialog::backdrop{background:rgba(10,14,20,.55)}
+  .dlg-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .dlg-head h3{margin:0;margin-right:auto;font-size:16px}
+  .dlg-body{padding:18px;overflow:auto;max-height:72vh}
+  #printArea{display:none}
+  @media print{
+    body>*{display:none !important}
+    #printArea{display:block !important;color:#000;background:#fff;font-size:13px}
+    #printArea table{min-width:0;border:1px solid #999}
+    #printArea th,#printArea td{border:1px solid #bbb}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= ĐĂNG NHẬP ================= -->
+<div id="loginScreen">
+  <form class="login-card" id="loginForm" autocomplete="off">
+    <div class="login-logo">H</div>
+    <h1>Quản lý vận tải HLT</h1>
+    <div class="sub">Đăng nhập để vào phần mềm quản lý công nợ · lương · doanh thu · chi phí</div>
+    <div class="login-err" id="loginErr">Sai tên đăng nhập hoặc mật khẩu. Kiểm tra lại nhé.</div>
+    <div class="field"><label for="liUser">Tên đăng nhập</label><input id="liUser" required placeholder="Tên đăng nhập đã tạo" /></div>
+    <div class="field"><label for="liPass">Mật khẩu</label><input id="liPass" type="password" required placeholder="••••••••" /></div>
+    <button class="btn-login" type="submit">Đăng nhập</button>
+    <div class="login-note">Quên mật khẩu? Mật khẩu chỉ lưu trong trình duyệt này nên không khôi phục từ xa được — hãy giữ bản sao lưu dữ liệu (mục Cài đặt → Xuất dữ liệu) ở nơi an toàn.</div>
+  </form>
+  <form class="login-card" id="setupForm" autocomplete="off" style="display:none">
+    <div class="login-logo">H</div>
+    <h1>Quản lý vận tải HLT</h1>
+    <div class="sub">Lần mở đầu tiên trên máy này — tạo tài khoản của bạn để bắt đầu. Tài khoản này là Kế toán trưởng, đổi mật khẩu và thêm tài khoản khác ở mục Cài đặt.</div>
+    <div class="login-err" id="setupErr"></div>
+    <div class="field"><label for="suName">Họ tên</label><input id="suName" required placeholder="VD: Kế toán trưởng" /></div>
+    <div class="field"><label for="suUser">Tên đăng nhập tự chọn</label><input id="suUser" required placeholder="VD: daisy" /></div>
+    <div class="field"><label for="suPass">Mật khẩu (ít nhất 6 ký tự)</label><input id="suPass" type="password" required placeholder="••••••••" /></div>
+    <div class="field"><label for="suPass2">Nhập lại mật khẩu</label><input id="suPass2" type="password" required placeholder="••••••••" /></div>
+    <button class="btn-login" type="submit">Tạo tài khoản & vào phần mềm</button>
+    <div class="login-note">Tài khoản và dữ liệu chỉ lưu trong trình duyệt của máy này, không gửi lên máy chủ nào — phù hợp để tự lưu trữ file HTML trên GitHub Pages.</div>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" style="display:none">
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">H</div>
+        <div>
+          <div class="name" id="coName">CÔNG TY TNHH TM DV ĐT PT VẬN TẢI HLT</div>
+          <div class="mst">MST <span id="coMst">0319687789</span> · Phần mềm quản lý vận tải</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <select class="monthpick" id="monthPick" aria-label="Chọn tháng"></select>
+        <span class="userbadge" id="userBadge"></span>
+        <button class="btn" id="btnExportJson">Xuất dữ liệu</button>
+        <button class="btn" id="btnImportJson">Nhập dữ liệu</button>
+        <input type="file" id="fileImport" accept=".json,application/json" hidden />
+        <button class="btn" id="btnDownloadHtml" title="Tải chính file HTML này để đưa lên GitHub">Tải file HTML</button>
+        <button class="btn danger" id="btnLogout">Đăng xuất</button>
+      </div>
+    </header>
+
+    <section class="band" aria-label="Tổng quan tháng">
+      <div class="big"><small id="bandLabel">Doanh thu tháng</small><span class="val" id="bandRevenue">0 đ</span></div>
+      <div class="stats">
+        <div><small>Tổng chi phí</small><span class="v" id="bandCost">0</span></div>
+        <div><small>Lãi / lỗ tháng</small><span class="v" id="bandProfit">0</span></div>
+        <div><small>Còn phải thu</small><span class="v" id="bandRecv">0</span></div>
+        <div><small>Còn phải trả</small><span class="v" id="bandPay">0</span></div>
+        <div><small>Thuế GTGT phải nộp</small><span class="v" id="bandVat">0</span></div>
+      </div>
+    </section>
+
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <main id="view"></main>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<dialog id="dlg">
+  <div class="dlg-head"><h3 id="dlgTitle"></h3>
+    <button class="btn primary small" id="dlgPrint">Tải bản in</button>
+    <button class="btn small" id="dlgClose">Đóng</button>
+  </div>
+  <div class="dlg-body" id="dlgBody"></div>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   QUẢN LÝ VẬN TẢI HLT — bản HTML 1 file (đưa lên GitHub Pages là chạy)
+   Dữ liệu lưu trong localStorage của trình duyệt trên máy đang dùng.
+   ===================================================================== */
+var LS_KEY = "qlvt_hlt_html_v1";
+var SES_KEY = "qlvt_hlt_session";
+
+/* ---------- Tiện ích ---------- */
+function $(s, r){ return (r||document).querySelector(s); }
+function $$(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function num(v){ var n = parseFloat(String(v==null?"":v).replace(/[^\d.-]/g,"")); return isNaN(n)?0:n; }
+function fmt(n){ return Math.round(n||0).toLocaleString("vi-VN"); }
+function fmtD(n){ return fmt(n) + " đ"; }
+function fmtShort(n){
+  n = n||0; var a = Math.abs(n);
+  if (a >= 1e9) return (n/1e9).toLocaleString("vi-VN",{maximumFractionDigits:2}) + " tỷ";
+  if (a >= 1e6) return (n/1e6).toLocaleString("vi-VN",{maximumFractionDigits:1}) + " tr";
+  return fmt(n);
+}
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function todayStr(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function curMonth(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function monthOf(dateStr){ return (dateStr||"").slice(0,7); }
+function monthLabel(m){
+  if(!m) return "";
+  var p=m.split("-"); return "Tháng " + parseInt(p[1],10) + " / " + p[0];
+}
+function addDays(dateStr, days){
+  var d = new Date(dateStr+"T00:00:00"); d.setDate(d.getDate()+days);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function toast(msg){
+  var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove("show"); }, 2600);
+}
+function download(name, content, type){
+  var blob = new Blob([content], {type: type||"text/plain;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+function toCSV(rows){
+  return rows.map(function(r){
+    return r.map(function(c){
+      c = String(c==null?"":c);
+      return /[",\n;]/.test(c) ? '"' + c.replace(/"/g,'""') + '"' : c;
+    }).join(";");
+  }).join("\r\n");
+}
+
+/* ---------- Dữ liệu mẫu ban đầu (danh mục thật của HLT, giao dịch trống) ---------- */
+function seedData(){
+  return {
+    settings: {
+      company: "CÔNG TY TNHH TM DV ĐT PT VẬN TẢI HLT",
+      mst: "0319687789",
+      address: "",
+      bank: ""
+    },
+    users: [],   // trống: người dùng tự tạo tài khoản ở lần mở đầu tiên
+    partners: [
+      { id: uid(), name: "SHANDONG (Beautiful)", mst: "", type: "KH", term: 30, openRecv: 0, openPay: 0 },
+      { id: uid(), name: "MINHHUNG-MLT", mst: "", type: "KH", term: 30, openRecv: 0, openPay: 0 },
+      { id: uid(), name: "DNTN Dầu Trung Hiếu", mst: "3900302915", type: "NCC", term: 30, openRecv: 0, openPay: 0 },
+      { id: uid(), name: "Xăng Dầu Hoàng Gia", mst: "", type: "NCC", term: 30, openRecv: 0, openPay: 0 }
+    ],
+    vehicles: [
+      { id: uid(), plate: "50F10012", driver: "Huỳnh Minh Hùng", kind: "HLT" },
+      { id: uid(), plate: "50F10035", driver: "Đặng Thanh Nhân", kind: "HLT" },
+      { id: uid(), plate: "50F10163", driver: "Nguyễn Lê Trọng Khang", kind: "HLT" },
+      { id: uid(), plate: "50F10297", driver: "Nguyễn Văn Hồng", kind: "HLT" },
+      { id: uid(), plate: "50E96883", driver: "Nguyễn Anh Vũ", kind: "Ngoài" },
+      { id: uid(), plate: "70F00390", driver: "Bùi Quang Thoại", kind: "Ngoài" }
+    ],
+    trips: [],        // {id,date,customer,cont,booking,plate,driver,pickup,drop,freight,invoice,extra,ticket,anchor,fuel}
+    invOut: [],       // {id,date,symbol,number,partner,desc,beforeTax,vatRate,paid,viaTrip}
+    invIn: [],        // {id,date,number,partner,cat,beforeTax,vatRate,paid}
+    expenses: [],     // {id,date,cat,desc,amount,plate,hasInv}
+    payroll: [],      // {id,month,name,role,base,bhxhBase,tripPay,bonus,dependents,advance}
+    cash: [],         // {id,date,type,desc,amount,method}
+    assets: [],       // {id,name,cost,months,start}
+    locked: [],       // ["2026-10", ...]
+    audit: []         // {time,user,action}
+  };
+}
+function loadDB(){
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (raw) { var d = JSON.parse(raw); if (d && d.settings) return d; }
+  } catch(e){}
+  return seedData();
+}
+var DB = loadDB();
+function saveDB(){ try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch(e){ toast("Trình duyệt không lưu được dữ liệu (hết dung lượng?)"); } }
+function audit(action){
+  DB.audit.unshift({ time: new Date().toLocaleString("vi-VN"), user: session ? session.user : "?", action: action });
+  if (DB.audit.length > 300) DB.audit.length = 300;
+}
+
+/* ---------- Phiên đăng nhập ---------- */
+var session = null;
+try { var s = sessionStorage.getItem(SES_KEY); if (s) session = JSON.parse(s); } catch(e){}
+function currentUser(){ return session ? DB.users.filter(function(u){ return u.user === session.user; })[0] : null; }
+function isLocked(month){ return DB.locked.indexOf(month) >= 0; }
+function guardMonth(month){
+  if (isLocked(month)) { toast("Tháng " + monthLabel(month) + " đã khóa sổ — chỉ Kế toán trưởng mở khóa được (mục Cài đặt)."); return false; }
+  return true;
+}
+
+/* ---------- Tính toán nghiệp vụ ---------- */
+function tripCost(t){ return num(t.invoice)+num(t.extra)+num(t.ticket)+num(t.anchor)+num(t.fuel); }
+function tripProfit(t){ return num(t.freight) - tripCost(t); }
+function invTotal(inv){ return num(inv.beforeTax) * (1 + num(inv.vatRate)/100); }
+function invVat(inv){ return num(inv.beforeTax) * num(inv.vatRate)/100; }
+
+function calcPayroll(p){
+  var gross = num(p.base) + num(p.tripPay) + num(p.bonus);
+  var bhxhBase = num(p.bhxhBase);
+  var empIns = Math.round(bhxhBase * 0.105);          // NLĐ đóng 10,5%
+  var compIns = Math.round(bhxhBase * 0.235);         // Công ty đóng 23,5%
+  var taxable = gross - empIns - 11000000 - num(p.dependents)*4400000;
+  var pit = 0;
+  if (taxable > 0) {
+    var brackets = [[5000000,.05],[10000000,.10],[18000000,.15],[32000000,.20],[52000000,.25],[80000000,.30],[Infinity,.35]];
+    var prev = 0;
+    for (var i=0;i<brackets.length;i++){
+      if (taxable > prev) { pit += (Math.min(taxable, brackets[i][0]) - prev) * brackets[i][1]; prev = brackets[i][0]; }
+      else break;
+    }
+    pit = Math.round(pit);
+  }
+  var net = gross - empIns - pit - num(p.advance);
+  return { gross: gross, empIns: empIns, compIns: compIns, pit: pit, net: net, compCost: gross + compIns };
+}
+
+function partnerName(id){ var p = DB.partners.filter(function(x){ return x.id===id; })[0]; return p ? p.name : ""; }
+function partnerTerm(name){
+  var p = DB.partners.filter(function(x){ return x.name===name; })[0];
+  return p ? num(p.term)||30 : 30;
+}
+/* Công nợ theo từng đối tác: phát sinh từ hóa đơn, đã thu/trả từ cột paid, cộng dư đầu kỳ */
+function partnerBalances(){
+  var map = {};
+  DB.partners.forEach(function(p){ map[p.name] = { name: p.name, mst: p.mst, type: p.type, phatThu: num(p.openRecv), daThu: 0, phatTra: num(p.openPay), daTra: 0, overdue: 0 }; });
+  function row(name){ if(!map[name]) map[name] = { name: name, mst:"", type:"", phatThu:0, daThu:0, phatTra:0, daTra:0, overdue:0 }; return map[name]; }
+  var today = todayStr();
+  DB.invOut.forEach(function(inv){
+    var r = row(inv.partner); var tot = invTotal(inv);
+    r.phatThu += tot; r.daThu += num(inv.paid);
+    var due = addDays(inv.date, partnerTerm(inv.partner));
+    if (tot - num(inv.paid) > 0 && due < today) r.overdue += tot - num(inv.paid);
+  });
+  DB.invIn.forEach(function(inv){
+    var r = row(inv.partner); var tot = invTotal(inv);
+    r.phatTra += tot; r.daTra += num(inv.paid);
+  });
+  return Object.keys(map).map(function(k){ var r = map[k]; r.conThu = r.phatThu - r.daThu; r.conTra = r.phatTra - r.daTra; return r; })
+    .filter(function(r){ return r.phatThu||r.phatTra||r.conThu||r.conTra; });
+}
+function totals(){
+  var recv = 0, pay = 0, overdue = 0;
+  partnerBalances().forEach(function(r){ recv += Math.max(r.conThu,0); pay += Math.max(r.conTra,0); overdue += r.overdue; });
+  return { recv: recv, pay: pay, overdue: overdue };
+}
+function monthFigures(m){
+  var rev = 0, cost = 0;
+  DB.trips.forEach(function(t){ if (monthOf(t.date)===m){ rev += num(t.freight); cost += tripCost(t); } });
+  DB.invOut.forEach(function(inv){ if (monthOf(inv.date)===m && !inv.viaTrip) rev += num(inv.beforeTax); });
+  DB.expenses.forEach(function(e){ if (monthOf(e.date)===m) cost += num(e.amount); });
+  DB.payroll.forEach(function(p){ if (p.month===m) cost += calcPayroll(p).compCost; });
+  DB.assets.forEach(function(a){
+    if (a.start && m >= a.start) {
+      var idx = monthIndex(m) - monthIndex(a.start);
+      if (idx >= 0 && idx < num(a.months)) cost += num(a.cost)/Math.max(num(a.months),1);
+    }
+  });
+  var vatOut = 0, vatIn = 0;
+  DB.invOut.forEach(function(inv){ if (monthOf(inv.date)===m) vatOut += invVat(inv); });
+  DB.invIn.forEach(function(inv){ if (monthOf(inv.date)===m) vatIn += invVat(inv); });
+  return { rev: rev, cost: cost, profit: rev - cost, vat: Math.max(vatOut - vatIn, 0), vatOut: vatOut, vatIn: vatIn };
+}
+function monthIndex(m){ var p=(m||"0-0").split("-"); return parseInt(p[0],10)*12 + parseInt(p[1],10); }
+function shiftMonth(m, d){
+  var p = m.split("-"); var dt = new Date(parseInt(p[0],10), parseInt(p[1],10)-1+d, 1);
+  return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0");
+}
+
+/* ---------- Trạng thái giao diện ---------- */
+var state = { tab: "tongquan", month: curMonth(), q: "", catFilter: "" };
+var TABS = [
+  ["tongquan","Tổng quan"],["chuyen","Chuyến hàng"],["hd-ban","Hóa đơn bán ra"],["hd-mua","Hóa đơn mua vào"],
+  ["congno","Công nợ"],["chiphi","Chi phí"],["luong","Tiền lương"],["thuchi","Thu chi"],
+  ["danhmuc","Danh mục"],["baocao","Báo cáo & Thuế"],["caidat","Cài đặt"]
+];
+
+/* ---------- Khởi động ---------- */
+function refreshLoginMode(){
+  var first = DB.users.length === 0;
+  $("#setupForm").style.display = first ? "block" : "none";
+  $("#loginForm").style.display = first ? "none" : "block";
+}
+function init(){
+  $("#loginForm").addEventListener("submit", doLogin);
+  $("#setupForm").addEventListener("submit", doSetup);
+  $("#btnLogout").addEventListener("click", doLogout);
+  $("#monthPick").addEventListener("change", function(){ state.month = this.value; render(); });
+  $("#btnExportJson").addEventListener("click", exportJSON);
+  $("#btnImportJson").addEventListener("click", function(){ $("#fileImport").click(); });
+  $("#fileImport").addEventListener("change", importJSON);
+  $("#btnDownloadHtml").addEventListener("click", downloadHTML);
+  $("#dlgClose").addEventListener("click", function(){ $("#dlg").close(); });
+  $("#dlgPrint").addEventListener("click", function(){
+    var doc = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Bản in</title>'
+      + '<style>body{font-family:Arial,sans-serif;font-size:13px;color:#000}table{width:100%;border-collapse:collapse}th,td{border:1px solid #999;padding:6px 8px}td.num,th.num{text-align:right}</style></head><body>'
+      + $("#printArea").innerHTML + "</body></html>";
+    download("ban-in-thue-tncn-" + state.month + ".html", doc, "text/html;charset=utf-8");
+    toast("Đã tải bản in — mở file vừa tải rồi bấm In trong trình duyệt.");
+  });
+  buildMonthPick(); buildTabs();
+  if (session && currentUser()) { showApp(); } else { refreshLoginMode(); $("#loginScreen").style.display = "flex"; }
+}
+function doSetup(e){
+  e.preventDefault();
+  var name = $("#suName").value.trim(), u = $("#suUser").value.trim();
+  var p1 = $("#suPass").value, p2 = $("#suPass2").value;
+  var err = $("#setupErr");
+  function fail(msg){ err.textContent = msg; err.style.display = "block"; }
+  if (!name || !u) { fail("Nhập đủ họ tên và tên đăng nhập."); return; }
+  if (p1.length < 6) { fail("Mật khẩu phải có ít nhất 6 ký tự."); return; }
+  if (p1 !== p2) { fail("Hai ô mật khẩu chưa khớp nhau."); return; }
+  err.style.display = "none";
+  DB.users.push({ id: uid(), user: u, pass: p1, name: name, role: "KTT" });
+  audit("Tạo tài khoản đầu tiên " + u); saveDB();
+  session = { user: u, role: "KTT", name: name };
+  try { sessionStorage.setItem(SES_KEY, JSON.stringify(session)); } catch(err2){}
+  showApp(); toast("Đã tạo tài khoản. Xin chào " + name);
+}
+function buildMonthPick(){
+  var sel = $("#monthPick"); var months = {};
+  months[curMonth()] = 1; months[state.month] = 1;
+  DB.trips.concat(DB.invOut, DB.invIn, DB.expenses, DB.cash).forEach(function(r){ if (r.date) months[monthOf(r.date)] = 1; });
+  DB.payroll.forEach(function(p){ months[p.month] = 1; });
+  var list = Object.keys(months).sort().reverse();
+  sel.innerHTML = list.map(function(m){ return '<option value="'+m+'"'+(m===state.month?" selected":"")+'>'+monthLabel(m)+"</option>"; }).join("");
+}
+function buildTabs(){
+  $("#tabs").innerHTML = TABS.map(function(t){
+    return '<button role="tab" data-tab="'+t[0]+'" class="'+(state.tab===t[0]?"on":"")+'">'+t[1]+"</button>";
+  }).join("");
+  $$("#tabs button").forEach(function(b){ b.addEventListener("click", function(){ state.tab = b.dataset.tab; state.q=""; render(); }); });
+}
+function doLogin(e){
+  e.preventDefault();
+  var u = $("#liUser").value.trim(), p = $("#liPass").value;
+  var found = DB.users.filter(function(x){ return x.user === u && x.pass === p; })[0];
+  if (!found) { $("#loginErr").style.display = "block"; return; }
+  session = { user: found.user, role: found.role, name: found.name };
+  try { sessionStorage.setItem(SES_KEY, JSON.stringify(session)); } catch(err){}
+  $("#loginErr").style.display = "none";
+  showApp(); toast("Xin chào " + found.name);
+}
+function doLogout(){
+  session = null;
+  try { sessionStorage.removeItem(SES_KEY); } catch(e){}
+  $("#app").style.display = "none";
+  refreshLoginMode();
+  $("#loginScreen").style.display = "flex";
+  $("#liPass").value = "";
+}
+function showApp(){
+  $("#loginScreen").style.display = "none";
+  $("#app").style.display = "block";
+  var u = currentUser();
+  $("#userBadge").textContent = (u ? u.name : "") + " · " + (session.role === "KTT" ? "Kế toán trưởng" : "Kế toán");
+  $("#coName").textContent = DB.settings.company;
+  $("#coMst").textContent = DB.settings.mst;
+  buildMonthPick(); render();
+}
+
+/* ---------- Render khung ---------- */
+function render(){
+  buildTabs(); buildMonthPick();
+  var f = monthFigures(state.month); var t = totals();
+  $("#bandLabel").textContent = "Doanh thu " + monthLabel(state.month).toLowerCase();
+  $("#bandRevenue").textContent = fmtD(f.rev);
+  $("#bandCost").textContent = fmtShort(f.cost);
+  $("#bandProfit").textContent = fmtShort(f.profit);
+  $("#bandRecv").textContent = fmtShort(t.recv);
+  $("#bandPay").textContent = fmtShort(t.pay);
+  $("#bandVat").textContent = fmtShort(f.vat);
+  var v = $("#view");
+  var fn = { tongquan: vTongQuan, chuyen: vChuyen, "hd-ban": vHdBan, "hd-mua": vHdMua, congno: vCongNo,
+             chiphi: vChiPhi, luong: vLuong, thuchi: vThuChi, danhmuc: vDanhMuc, baocao: vBaoCao, caidat: vCaiDat }[state.tab];
+  v.innerHTML = ""; fn(v);
+}
+function panelHead(title, extra){
+  return '<div class="phead"><h3>' + title + "</h3>" + (extra||"") + "</div>";
+}
+function searchBox(ph){
+  return '<div class="toolbar"><input type="search" id="q" placeholder="'+esc(ph||"Tìm kiếm…")+'" value="'+esc(state.q)+'" /></div>';
+}
+function bindSearch(cb){
+  var q = $("#q"); if (!q) return;
+  q.addEventListener("input", function(){ state.q = q.value; cb(); var nq = $("#q"); if (nq){ nq.focus(); nq.setSelectionRange(nq.value.length, nq.value.length); } });
+}
+function delBtn(kind, id){ return '<button class="del" data-del="'+kind+':'+id+'" title="Xóa">✕</button>'; }
+function bindDeletes(cb){
+  $$("[data-del]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var parts = b.dataset.del.split(":"); var kind = parts[0], id = parts[1];
+      var coll = { trip: DB.trips, invOut: DB.invOut, invIn: DB.invIn, exp: DB.expenses, pay: DB.payroll, cash: DB.cash, partner: DB.partners, vehicle: DB.vehicles, asset: DB.assets, user: DB.users }[kind];
+      var item = coll.filter(function(x){ return x.id===id; })[0];
+      var m = item && item.date ? monthOf(item.date) : (item && item.month ? item.month : state.month);
+      if (!guardMonth(m)) return;
+      if (kind === "user" && DB.users.length <= 1) { toast("Phải còn ít nhất 1 tài khoản đăng nhập."); return; }
+      DB[kind==="trip"?"trips":kind==="exp"?"expenses":kind==="pay"?"payroll":kind] =
+        coll.filter(function(x){ return x.id!==id; });
+      // map lại đúng mảng cho các loại còn lại
+      if (kind==="invOut") DB.invOut = DB.invOut.filter(function(x){ return x.id!==id; });
+      if (kind==="invIn") DB.invIn = DB.invIn.filter(function(x){ return x.id!==id; });
+      if (kind==="partner") DB.partners = DB.partners.filter(function(x){ return x.id!==id; });
+      if (kind==="vehicle") DB.vehicles = DB.vehicles.filter(function(x){ return x.id!==id; });
+      if (kind==="asset") DB.assets = DB.assets.filter(function(x){ return x.id!==id; });
+      if (kind==="user") DB.users = DB.users.filter(function(x){ return x.id!==id; });
+      if (kind==="cash") DB.cash = DB.cash.filter(function(x){ return x.id!==id; });
+      audit("Xóa " + kind + " (" + id + ")");
+      saveDB(); toast("Đã xóa."); cb ? cb() : render();
+    });
+  });
+}
+function csvBtn(id){ return '<button class="btn small" id="'+id+'">Tải CSV</button>'; }
+function field(label, inner, cls){ return '<div class="'+(cls||"")+'"><label>'+label+"</label>"+inner+"</div>"; }
+function inp(name, type, val, ph){ return '<input name="'+name+'" type="'+(type||"text")+'" value="'+esc(val==null?"":val)+'" placeholder="'+esc(ph||"")+'" />'; }
+function partnerOptions(val, anyLabel){
+  var h = anyLabel ? '<option value="">'+anyLabel+"</option>" : "";
+  return h + DB.partners.map(function(p){ return '<option value="'+esc(p.name)+'"'+(p.name===val?" selected":"")+">"+esc(p.name)+"</option>"; }).join("");
+}
+function vehicleOptions(val){
+  return DB.vehicles.map(function(v){ return '<option value="'+esc(v.plate)+'"'+(v.plate===val?" selected":"")+">"+esc(v.plate)+" — "+esc(v.driver)+"</option>"; }).join("");
+}
+function driverOf(plate){ var v = DB.vehicles.filter(function(x){ return x.plate===plate; })[0]; return v ? v.driver : ""; }
+
+/* ================= TỔNG QUAN ================= */
+function vTongQuan(v){
+  var f = monthFigures(state.month); var t = totals();
+  var tripsM = DB.trips.filter(function(x){ return monthOf(x.date)===state.month; });
+  var profitTrips = tripsM.reduce(function(s,x){ return s+tripProfit(x); }, 0);
+  var html = '<div class="grid">'
+    + stat("Số chuyến trong tháng", tripsM.length, tripsM.reduce(function(s,x){return s+ (x.cont?1:0);},0) + " cont đã ghi")
+    + stat("Lãi các chuyến", fmtShort(profitTrips), "cước − nâng hạ − dầu − vé bãi − neo − phát sinh", profitTrips)
+    + stat("Công nợ quá hạn", fmtShort(t.overdue), "từ hóa đơn bán ra chưa thu quá hạn trả", -t.overdue)
+    + stat("Quỹ lương tháng (cả BHXH cty đóng)", fmtShort(DB.payroll.filter(function(p){return p.month===state.month;}).reduce(function(s,p){return s+calcPayroll(p).compCost;},0)), DB.payroll.filter(function(p){return p.month===state.month;}).length + " người")
+    + stat("Tiền mặt + ngân hàng còn", fmtShort(DB.cash.reduce(function(s,c){ return s + (c.type==="Thu"?num(c.amount):-num(c.amount)); },0)), "theo sổ thu chi đã nhập")
+    + stat("Thuế GTGT phải nộp tháng", fmtShort(f.vat), "bán ra " + fmtShort(f.vatOut) + " − mua vào " + fmtShort(f.vatIn))
+    + "</div>";
+  html += '<div class="twocol" style="margin-top:16px"><div class="panel">' + panelHead("Doanh thu – chi phí 6 tháng gần nhất")
+    + '<div style="padding:14px 16px">' + chart6() + "</div></div>"
+    + '<div class="panel">' + panelHead("Lãi theo xe — " + monthLabel(state.month)) + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Xe</th><th>Tài xế</th><th class="num">Chuyến</th><th class="num">Lãi</th></tr></thead><tbody>'
+    + profitByVehicle(state.month) + "</tbody></table></div></div></div>";
+  html += '<div class="panel">' + panelHead("Công nợ quá hạn cần đòi / trả gấp")
+    + overdueList() + "</div>";
+  v.innerHTML = html;
+}
+function stat(label, n, d, sign){
+  var cls = sign === undefined ? "" : (sign < 0 ? " neg" : " pos");
+  return '<div class="card stat"><small>'+label+'</small><div class="n'+cls+'">'+n+'</div><div class="d">'+esc(d)+"</div></div>";
+}
+function chart6(){
+  var months = []; for (var i=5;i>=0;i--) months.push(shiftMonth(state.month, -i));
+  var data = months.map(function(m){ var f = monthFigures(m); return { m: m, rev: f.rev, cost: f.cost }; });
+  var max = 1; data.forEach(function(d){ max = Math.max(max, d.rev, d.cost); });
+  var W = 520, H = 190, base = 158, bw = 26, gap = (W-40)/data.length;
+  var s = '<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Biểu đồ doanh thu và chi phí 6 tháng">';
+  s += '<line x1="30" y1="'+base+'" x2="'+(W-6)+'" y2="'+base+'" stroke="var(--line)" stroke-width="1.5"/>';
+  data.forEach(function(d, i){
+    var x = 40 + i*gap;
+    var hr = Math.round(d.rev/max*(base-24)), hc = Math.round(d.cost/max*(base-24));
+    s += '<rect x="'+x+'" y="'+(base-hr)+'" width="'+bw+'" height="'+hr+'" rx="3" fill="#e07f13"><title>'+monthLabel(d.m)+" doanh thu "+fmtD(d.rev)+"</title></rect>";
+    s += '<rect x="'+(x+bw+5)+'" y="'+(base-hc)+'" width="'+bw+'" height="'+hc+'" rx="3" fill="#8a94a3"><title>'+monthLabel(d.m)+" chi phí "+fmtD(d.cost)+"</title></rect>";
+    s += '<text x="'+(x+bw)+'" y="'+(base+18)+'" font-size="11" text-anchor="middle" fill="var(--ink2)">T'+parseInt(d.m.split("-")[1],10)+"</text>";
+  });
+  s += '<rect x="40" y="2" width="11" height="11" fill="#e07f13"/><text x="56" y="12" font-size="11.5" fill="var(--ink)">Doanh thu</text>';
+  s += '<rect x="140" y="2" width="11" height="11" fill="#8a94a3"/><text x="156" y="12" font-size="11.5" fill="var(--ink)">Chi phí</text></svg>';
+  return s;
+}
+function profitByVehicle(m){
+  var map = {};
+  DB.trips.forEach(function(t){ if (monthOf(t.date)!==m) return;
+    if (!map[t.plate]) map[t.plate] = { n: 0, profit: 0 };
+    map[t.plate].n++; map[t.plate].profit += tripProfit(t);
+  });
+  var rows = Object.keys(map).sort(function(a,b){ return map[b].profit - map[a].profit; });
+  if (!rows.length) return '<tr><td colspan="4" class="empty">Chưa có chuyến nào trong tháng.</td></tr>';
+  return rows.map(function(plate){
+    var r = map[plate];
+    return "<tr><td><b>"+esc(plate)+"</b></td><td>"+esc(driverOf(plate))+'</td><td class="num">'+r.n+'</td><td class="num '+(r.profit<0?"neg":"pos")+'"><b>'+fmt(r.profit)+"</b></td></tr>";
+  }).join("");
+}
+function overdueList(){
+  var today = todayStr(); var rows = [];
+  DB.invOut.forEach(function(inv){
+    var tot = invTotal(inv), con = tot - num(inv.paid);
+    var due = addDays(inv.date, partnerTerm(inv.partner));
+    if (con > 0 && due < today) rows.push({ partner: inv.partner, label: "HĐ " + inv.number, due: due, con: con, kind: "Phải thu" });
+  });
+  if (!rows.length) return '<div class="empty">Không có khoản nào quá hạn. Tốt!</div>';
+  rows.sort(function(a,b){ return a.due < b.due ? -1 : 1; });
+  return '<div class="twrap"><table style="min-width:0"><thead><tr><th>Đối tác</th><th>Chứng từ</th><th>Hạn trả</th><th class="num">Còn nợ</th></tr></thead><tbody>'
+    + rows.slice(0,10).map(function(r){ return "<tr><td>"+esc(r.partner)+"</td><td>"+esc(r.label)+'</td><td><span class="pill qua">'+esc(r.due)+'</span></td><td class="num neg"><b>'+fmt(r.con)+"</b></td></tr>"; }).join("")
+    + "</tbody></table></div>";
+}
+
+/* ================= CHUYẾN HÀNG ================= */
+function vChuyen(v){
+  var locked = isLocked(state.month);
+  var html = '<div class="panel">' + panelHead("Chuyến hàng — " + monthLabel(state.month), csvBtn("csvTrips"))
+    + (locked ? '<div style="padding:10px 16px" class="muted">Tháng này đã khóa sổ — mở khóa ở mục Cài đặt để sửa.</div>' :
+      '<form class="rowform" id="fTrip">'
+      + field("Ngày", inp("date","date", state.month+"-01"))
+      + field("Khách hàng", '<select name="customer">'+partnerOptions("","— chọn / gõ ở Danh mục —")+"</select>")
+      + field("Số cont", inp("cont","text","","VD: TCLU9570825"))
+      + field("Số booking", inp("booking","text",""))
+      + field("Xe", '<select name="plate">'+vehicleOptions("")+"</select>")
+      + field("Nơi nhận", inp("pickup","text","","Bavet…"))
+      + field("Nơi hạ", inp("drop","text","","Cát Lái / Bình Dương"))
+      + field("Cước (đ)", inp("freight","number","", "0"))
+      + field("Hóa đơn nâng hạ (đ)", inp("invoice","number","","0"))
+      + field("Phát sinh (đ)", inp("extra","number","","0"))
+      + field("Vé bãi (đ)", inp("ticket","number","","0"))
+      + field("Neo (đ)", inp("anchor","number","","0"))
+      + field("Dầu (đ)", inp("fuel","number","","0"))
+      + '<div class="act"><button class="btn primary" type="submit">+ Thêm chuyến</button></div></form>')
+    + '<div style="padding:12px 16px 0">' + searchBox("Tìm theo cont, khách, xe, booking…") + "</div>"
+    + '<div id="tripTable"></div></div>';
+  v.innerHTML = html;
+  function draw(){
+    var rows = DB.trips.filter(function(t){
+      return monthOf(t.date)===state.month && (!state.q || (t.cont+" "+t.customer+" "+t.plate+" "+t.booking).toLowerCase().indexOf(state.q.toLowerCase())>=0);
+    }).sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    var sumF=0,sumC=0;
+    var body = rows.map(function(t){
+      sumF += num(t.freight); sumC += tripCost(t); var pr = tripProfit(t);
+      return "<tr><td>"+esc(t.date)+"</td><td>"+esc(t.customer)+"</td><td><b>"+esc(t.cont)+"</b><br><span class='muted'>"+esc(t.booking)+"</span></td><td>"+esc(t.plate)+"<br><span class='muted'>"+esc(t.driver)+"</span></td><td>"+esc(t.pickup)+" → "+esc(t.drop)+'</td><td class="num">'+fmt(t.freight)+'</td><td class="num">'+fmt(tripCost(t))+'</td><td class="num '+(pr<0?"neg":"pos")+'"><b>'+fmt(pr)+"</b></td><td>"+(locked?"":delBtn("trip", t.id))+"</td></tr>";
+    }).join("");
+    $("#tripTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Ngày</th><th>Khách</th><th>Cont / Booking</th><th>Xe / Tài xế</th><th>Tuyến</th><th class="num">Cước</th><th class="num">Chi phí chuyến</th><th class="num">Lãi</th><th></th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="9" class="empty">Chưa có chuyến nào trong tháng này.</td></tr>')
+      + '</tbody></table></div><div class="totbar"><span>Tổng cước: '+fmtD(sumF)+'</span><span>Tổng chi phí chuyến: '+fmtD(sumC)+'</span><span>Lãi chuyến: '+fmtD(sumF-sumC)+"</span></div>";
+    bindDeletes(draw);
+  }
+  draw(); bindSearch(draw);
+  var f = $("#fTrip");
+  if (f) f.addEventListener("submit", function(e){
+    e.preventDefault();
+    var fd = new FormData(f);
+    var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!guardMonth(monthOf(d("date")))) return;
+    DB.trips.push({ id: uid(), date: d("date"), customer: d("customer"), cont: d("cont"), booking: d("booking"),
+      plate: d("plate"), driver: driverOf(d("plate")), pickup: d("pickup"), drop: d("drop"),
+      freight: num(d("freight")), invoice: num(d("invoice")), extra: num(d("extra")), ticket: num(d("ticket")), anchor: num(d("anchor")), fuel: num(d("fuel")) });
+    audit("Thêm chuyến cont " + d("cont")); saveDB(); toast("Đã thêm chuyến."); render();
+  });
+  var c = $("#csvTrips"); if (c) c.addEventListener("click", function(){
+    var rows = [["Ngày","Khách","Cont","Booking","Xe","Tài xế","Nhận","Hạ","Cước","Hóa đơn","Phát sinh","Vé bãi","Neo","Dầu","Lãi"]];
+    DB.trips.filter(function(t){ return monthOf(t.date)===state.month; }).forEach(function(t){
+      rows.push([t.date,t.customer,t.cont,t.booking,t.plate,t.driver,t.pickup,t.drop,t.freight,t.invoice,t.extra,t.ticket,t.anchor,t.fuel,tripProfit(t)]);
+    });
+    download("chuyen-hang-" + state.month + ".csv", "﻿" + toCSV(rows), "text/csv;charset=utf-8");
+  });
+}
+
+/* ================= HÓA ĐƠN ================= */
+function invForm(kind){
+  var isOut = kind === "out";
+  return '<form class="rowform" id="fInv">'
+    + field("Ngày", inp("date","date", state.month+"-01"))
+    + (isOut ? field("Ký hiệu", inp("symbol","text","","1C26T…")) : "")
+    + field("Số hóa đơn", inp("number","text","","00000123"))
+    + field(isOut ? "Khách hàng" : "Nhà cung cấp", '<select name="partner">'+partnerOptions("")+"</select>")
+    + field("Nội dung", inp("desc","text","", isOut ? "Cước vận chuyển…" : "Dầu / nâng hạ…"), "wide")
+    + (isOut ? "" : field("Loại chi phí", '<select name="cat"><option>Dầu</option><option>Nâng hạ</option><option>Sửa xe</option><option>Vé bãi</option><option>Cầu đường</option><option>Khác</option></select>'))
+    + field("Tiền chưa thuế (đ)", inp("beforeTax","number","","0"))
+    + field("Thuế suất %", '<select name="vatRate"><option>0</option><option selected>8</option><option>10</option></select>')
+    + field("Đã " + (isOut ? "thu" : "trả") + " (đ)", inp("paid","number","","0"))
+    + (isOut ? field("Đã ghi DT qua chuyến", '<select name="viaTrip"><option value="">Không</option><option value="1">Có — không tính doanh thu 2 lần</option></select>') : "")
+    + '<div class="act"><button class="btn primary" type="submit">+ Thêm hóa đơn</button></div></form>';
+}
+function vHdBan(v){ vInv(v, "out"); }
+function vHdMua(v){ vInv(v, "in"); }
+function vInv(v, kind){
+  var isOut = kind === "out";
+  var coll = isOut ? DB.invOut : DB.invIn;
+  var locked = isLocked(state.month);
+  var html = '<div class="panel">' + panelHead((isOut ? "Hóa đơn bán ra" : "Hóa đơn mua vào") + " — " + monthLabel(state.month), csvBtn("csvInv"))
+    + (locked ? '<div style="padding:10px 16px" class="muted">Tháng này đã khóa sổ.</div>' : invForm(kind))
+    + '<div id="invTable"></div></div>'
+    + (isOut ? "" : '<div class="panel">' + panelHead("Dán nhập hàng loạt từ file cổng thuế") 
+      + '<div style="padding:14px 16px"><div class="muted" style="margin-bottom:8px">Dán các dòng từ file Excel tải ở cổng thuế (mỗi dòng: Ngày \\t Số HĐ \\t Đối tác \\t Tiền chưa thuế \\t Thuế suất \\t Đã trả). Hóa đơn trùng số sẽ tự bỏ qua.</div>'
+      + '<textarea id="bulkIn" rows="4" placeholder="2026-11-03&#9;00001234&#9;DNTN Dầu Trung Hiếu&#9;12000000&#9;10&#9;0"></textarea>'
+      + '<div style="margin-top:10px"><button class="btn primary" id="btnBulk">Nhập các dòng trên</button></div></div></div>');
+  v.innerHTML = html;
+  function draw(){
+    var rows = coll.filter(function(x){ return monthOf(x.date)===state.month; }).sort(function(a,b){ return a.date<b.date?-1:1; });
+    var sB=0,sV=0,sT=0,sP=0;
+    var body = rows.map(function(inv){
+      var tot = invTotal(inv); sB += num(inv.beforeTax); sV += invVat(inv); sT += tot; sP += num(inv.paid);
+      var con = tot - num(inv.paid);
+      var due = addDays(inv.date, partnerTerm(inv.partner));
+      var od = isOut && con > 0 && due < todayStr();
+      return '<tr class="'+(od?"overdue":"")+'"><td>'+esc(inv.date)+"</td><td>"+(isOut?esc(inv.symbol)+" / ":"")+"<b>"+esc(inv.number)+"</b></td><td>"+esc(inv.partner)+"</td><td>"+esc(inv.desc||inv.cat||"")+'</td><td class="num">'+fmt(inv.beforeTax)+'</td><td class="num">'+fmt(invVat(inv))+'</td><td class="num">'+fmt(tot)+'</td><td class="num">'+fmt(inv.paid)+'</td><td class="num '+(con>0?"neg":"pos")+'"><b>'+fmt(con)+"</b>"+(od?' <span class="pill qua">quá hạn</span>':"")+"</td><td>"+(locked?"":delBtn(isOut?"invOut":"invIn", inv.id))+"</td></tr>";
+    }).join("");
+    $("#invTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Ngày</th><th>Số HĐ</th><th>Đối tác</th><th>Nội dung</th><th class="num">Chưa thuế</th><th class="num">Thuế</th><th class="num">Tổng</th><th class="num">Đã '+(isOut?"thu":"trả")+'</th><th class="num">Còn</th><th></th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="10" class="empty">Chưa có hóa đơn trong tháng.</td></tr>')
+      + '</tbody></table></div><div class="totbar"><span>Chưa thuế: '+fmtD(sB)+'</span><span>Thuế: '+fmtD(sV)+'</span><span>Tổng: '+fmtD(sT)+'</span><span>Đã '+(isOut?"thu":"trả")+": "+fmtD(sP)+'</span><span>Còn: '+fmtD(sT-sP)+"</span></div>";
+    bindDeletes(draw);
+  }
+  draw();
+  var f = $("#fInv");
+  if (f) f.addEventListener("submit", function(e){
+    e.preventDefault();
+    var fd = new FormData(f); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!guardMonth(monthOf(d("date")))) return;
+    var dup = coll.some(function(x){ return x.number === d("number") && x.number !== ""; });
+    if (dup) { toast("Hóa đơn số " + d("number") + " đã tồn tại — kiểm tra lại."); return; }
+    var rec = { id: uid(), date: d("date"), number: d("number"), partner: d("partner"), desc: d("desc"),
+      beforeTax: num(d("beforeTax")), vatRate: num(d("vatRate")), paid: num(d("paid")) };
+    if (isOut) { rec.symbol = d("symbol"); rec.viaTrip = d("viaTrip") === "1"; }
+    else rec.cat = d("cat");
+    coll.push(rec);
+    audit("Thêm hóa đơn " + (isOut?"bán ra ":"mua vào ") + rec.number); saveDB(); toast("Đã thêm hóa đơn."); render();
+  });
+  var c = $("#csvInv"); if (c) c.addEventListener("click", function(){
+    var rows = [["Ngày","Số HĐ","Đối tác","Nội dung","Chưa thuế","Thuế suất %","Tiền thuế","Tổng","Đã thanh toán","Còn"]];
+    coll.filter(function(x){ return monthOf(x.date)===state.month; }).forEach(function(inv){
+      rows.push([inv.date, inv.number, inv.partner, inv.desc||inv.cat||"", inv.beforeTax, inv.vatRate, Math.round(invVat(inv)), Math.round(invTotal(inv)), inv.paid, Math.round(invTotal(inv)-num(inv.paid))]);
+    });
+    download("hoa-don-" + (isOut?"ban-ra":"mua-vao") + "-" + state.month + ".csv", "﻿" + toCSV(rows), "text/csv;charset=utf-8");
+  });
+  var bb = $("#btnBulk");
+  if (bb) bb.addEventListener("click", function(){
+    var lines = $("#bulkIn").value.split(/\r?\n/).filter(function(l){ return l.trim(); });
+    var added = 0, skipped = 0;
+    lines.forEach(function(l){
+      var c = l.split("\t"); if (c.length < 4) { skipped++; return; }
+      var dstr = c[0].trim(), numb = c[1].trim();
+      if (DB.invIn.some(function(x){ return x.number === numb && numb; })) { skipped++; return; }
+      if (!guardMonth(monthOf(dstr))) { skipped++; return; }
+      DB.invIn.push({ id: uid(), date: dstr, number: numb, partner: c[2].trim(), cat: "Dầu", desc: "",
+        beforeTax: num(c[3]), vatRate: num(c[4])||10, paid: num(c[5]) });
+      added++;
+    });
+    audit("Nhập hàng loạt " + added + " hóa đơn mua vào"); saveDB();
+    toast("Đã nhập " + added + " hóa đơn, bỏ qua " + skipped + " dòng (trùng/không hợp lệ)."); render();
+  });
+}
+
+/* ================= CÔNG NỢ ================= */
+function vCongNo(v){
+  var rows = partnerBalances();
+  var t = totals();
+  var html = '<div class="grid">' 
+    + stat("Tổng còn phải thu", fmtShort(t.recv), "khách hàng nợ công ty")
+    + stat("Tổng còn phải trả", fmtShort(t.pay), "công ty nợ nhà cung cấp")
+    + stat("Quá hạn thu", fmtShort(t.overdue), "cần nhắc khách thanh toán", -t.overdue)
+    + "</div>";
+  html += '<div class="panel" style="margin-top:16px">' + panelHead("Sổ công nợ chi tiết theo đối tác", csvBtn("csvDebt"))
+    + '<div class="twrap"><table><thead><tr><th>Đối tác</th><th>MST</th><th class="num">Phát sinh thu</th><th class="num">Đã thu</th><th class="num">Còn phải thu</th><th class="num">Phát sinh trả</th><th class="num">Đã trả</th><th class="num">Còn phải trả</th><th class="num">Quá hạn</th></tr></thead><tbody>'
+    + (rows.length ? rows.map(function(r){
+        return "<tr><td><b>"+esc(r.name)+"</b></td><td>"+esc(r.mst)+'</td><td class="num">'+fmt(r.phatThu)+'</td><td class="num">'+fmt(r.daThu)+'</td><td class="num"><b>'+fmt(r.conThu)+'</b></td><td class="num">'+fmt(r.phatTra)+'</td><td class="num">'+fmt(r.daTra)+'</td><td class="num"><b>'+fmt(r.conTra)+'</b></td><td class="num neg">'+(r.overdue?fmt(r.overdue):"—")+"</td></tr>";
+      }).join("") : '<tr><td colspan="9" class="empty">Chưa có công nợ. Nhập số dư đầu kỳ ở mục Danh mục, hoặc thêm hóa đơn.</td></tr>')
+    + "</tbody></table></div>"
+    + '<div style="padding:12px 16px" class="muted">Phát sinh lấy từ hóa đơn bán ra / mua vào cộng số dư đầu kỳ từng đối tác (mục Danh mục). Cập nhật cột “Đã thu / Đã trả” ngay trên từng hóa đơn để công nợ tự khớp.</div></div>';
+  v.innerHTML = html;
+  $("#csvDebt").addEventListener("click", function(){
+    var rowsCsv = [["Đối tác","MST","Phát sinh thu","Đã thu","Còn phải thu","Phát sinh trả","Đã trả","Còn phải trả","Quá hạn"]];
+    rows.forEach(function(r){ rowsCsv.push([r.name,r.mst,r.phatThu,r.daThu,r.conThu,r.phatTra,r.daTra,r.conTra,r.overdue]); });
+    download("cong-no.csv", "﻿" + toCSV(rowsCsv), "text/csv;charset=utf-8");
+  });
+}
+
+/* ================= CHI PHÍ ================= */
+var EXP_CATS = ["Dầu","Nâng hạ","Vé bãi","Cầu đường","Sửa chữa","Đăng kiểm","Bảo hiểm xe","Bãi xe","Văn phòng","Lãi vay","Khác"];
+function vChiPhi(v){
+  var locked = isLocked(state.month);
+  var html = '<div class="panel">' + panelHead("Chi phí — " + monthLabel(state.month), csvBtn("csvExp"))
+    + (locked ? '<div style="padding:10px 16px" class="muted">Tháng này đã khóa sổ.</div>' :
+      '<form class="rowform" id="fExp">'
+      + field("Ngày", inp("date","date", state.month+"-01"))
+      + field("Loại chi phí", '<select name="cat">' + EXP_CATS.map(function(c){ return "<option>"+c+"</option>"; }).join("") + "</select>")
+      + field("Diễn giải", inp("desc","text","",""), "wide")
+      + field("Xe (nếu có)", '<select name="plate"><option value="">— không theo xe —</option>'+vehicleOptions("")+"</select>")
+      + field("Số tiền (đ)", inp("amount","number","","0"))
+      + field("Có hóa đơn?", '<select name="hasInv"><option value="1">Có</option><option value="">Chưa có</option></select>')
+      + '<div class="act"><button class="btn primary" type="submit">+ Thêm chi phí</button></div></form>')
+    + '<div style="padding:12px 16px 0"><div class="toolbar"><select id="catF"><option value="">Tất cả loại chi phí</option>'
+      + EXP_CATS.map(function(c){ return '<option'+(state.catFilter===c?" selected":"")+">"+c+"</option>"; }).join("") + "</select></div></div>"
+    + '<div id="expTable"></div></div>';
+  v.innerHTML = html;
+  function draw(){
+    var rows = DB.expenses.filter(function(e){ return monthOf(e.date)===state.month && (!state.catFilter || e.cat===state.catFilter); })
+      .sort(function(a,b){ return a.date<b.date?-1:1; });
+    var sum = 0, noInv = 0;
+    var body = rows.map(function(e){
+      sum += num(e.amount); if (!e.hasInv) noInv += num(e.amount);
+      return "<tr><td>"+esc(e.date)+"</td><td>"+esc(e.cat)+"</td><td>"+esc(e.desc)+"</td><td>"+esc(e.plate)+'</td><td class="num">'+fmt(e.amount)+"</td><td>"+(e.hasInv?'<span class="pill ok">có HĐ</span>':'<span class="pill wait">chưa HĐ</span>')+"</td><td>"+(locked?"":delBtn("exp", e.id))+"</td></tr>";
+    }).join("");
+    $("#expTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Ngày</th><th>Loại</th><th>Diễn giải</th><th>Xe</th><th class="num">Số tiền</th><th>Hóa đơn</th><th></th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="7" class="empty">Chưa có chi phí trong tháng.</td></tr>')
+      + '</tbody></table></div><div class="totbar"><span>Tổng chi phí: '+fmtD(sum)+'</span><span>Chưa có hóa đơn: '+fmtD(noInv)+"</span></div>";
+    bindDeletes(draw);
+  }
+  draw();
+  $("#catF").addEventListener("change", function(){ state.catFilter = this.value; draw(); });
+  var f = $("#fExp");
+  if (f) f.addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(f); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!guardMonth(monthOf(d("date")))) return;
+    DB.expenses.push({ id: uid(), date: d("date"), cat: d("cat"), desc: d("desc"), plate: d("plate"), amount: num(d("amount")), hasInv: d("hasInv")==="1" });
+    audit("Thêm chi phí " + d("cat") + " " + fmt(num(d("amount")))); saveDB(); toast("Đã thêm chi phí."); render();
+  });
+  $("#csvExp").addEventListener("click", function(){
+    var rows = [["Ngày","Loại","Diễn giải","Xe","Số tiền","Có hóa đơn"]];
+    DB.expenses.filter(function(e){ return monthOf(e.date)===state.month; }).forEach(function(e){ rows.push([e.date,e.cat,e.desc,e.plate,e.amount,e.hasInv?"Có":"Chưa"]); });
+    download("chi-phi-" + state.month + ".csv", "﻿" + toCSV(rows), "text/csv;charset=utf-8");
+  });
+}
+
+/* ================= TIỀN LƯƠNG ================= */
+function vLuong(v){
+  var locked = isLocked(state.month);
+  var drivers = DB.vehicles.map(function(x){ return x.driver; });
+  var html = '<div class="panel">' + panelHead("Bảng lương — " + monthLabel(state.month),
+      '<button class="btn small" id="btnPit">In bảng tổng hợp thuế TNCN</button>' + csvBtn("csvPay"))
+    + (locked ? '<div style="padding:10px 16px" class="muted">Tháng này đã khóa sổ.</div>' :
+      '<form class="rowform" id="fPay">'
+      + field("Họ tên", '<input name="name" list="driverList" placeholder="Chọn tài xế hoặc gõ tên" /><datalist id="driverList">' + drivers.map(function(d){ return "<option value='"+esc(d)+"'>"; }).join("") + "</datalist>")
+      + field("Nhóm", '<select name="role"><option value="TX">Tài xế (vào giá vốn 632)</option><option value="VP">Văn phòng (vào 642)</option></select>')
+      + field("Lương cứng (đ)", inp("base","number","","0"))
+      + field("Lương đóng BHXH (đ)", inp("bhxhBase","number","","0"))
+      + field("Phụ cấp chuyến (đ)", inp("tripPay","number","","0"))
+      + field("Thưởng (đ)", inp("bonus","number","","0"))
+      + field("Người phụ thuộc", inp("dependents","number","0"))
+      + field("Tạm ứng / phạt (đ)", inp("advance","number","","0"))
+      + '<div class="act"><button class="btn primary" type="submit">+ Thêm dòng lương</button></div></form>')
+    + '<div id="payTable"></div>'
+    + '<div style="padding:12px 16px" class="muted">Tự tính: BHXH người lao động 10,5% × lương đóng BHXH · công ty đóng thêm 23,5% · thuế TNCN lũy tiến sau giảm trừ 11.000.000đ/người + 4.400.000đ/người phụ thuộc. Số thuế trước khi nộp chính thức nên để kế toán kiểm lại.</div></div>';
+  v.innerHTML = html;
+  function rows(){ return DB.payroll.filter(function(p){ return p.month===state.month; }); }
+  function draw(){
+    var s = { gross:0, emp:0, comp:0, pit:0, net:0 };
+    var body = rows().map(function(p){
+      var c = calcPayroll(p);
+      s.gross+=c.gross; s.emp+=c.empIns; s.comp+=c.compIns; s.pit+=c.pit; s.net+=c.net;
+      return "<tr><td><b>"+esc(p.name)+"</b></td><td>"+(p.role==="TX"?"Tài xế":"Văn phòng")+'</td><td class="num">'+fmt(c.gross)+'</td><td class="num">'+fmt(c.empIns)+'</td><td class="num">'+fmt(c.compIns)+'</td><td class="num">'+fmt(c.pit)+'</td><td class="num">'+fmt(p.advance)+'</td><td class="num"><b>'+fmt(c.net)+"</b></td><td>"+(locked?"":delBtn("pay", p.id))+"</td></tr>";
+    }).join("");
+    $("#payTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Họ tên</th><th>Nhóm</th><th class="num">Thu nhập</th><th class="num">BHXH (NLĐ 10,5%)</th><th class="num">BHXH (Cty 23,5%)</th><th class="num">Thuế TNCN</th><th class="num">Tạm ứng</th><th class="num">Thực lãnh</th><th></th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="9" class="empty">Chưa có bảng lương tháng này.</td></tr>')
+      + '</tbody></table></div><div class="totbar"><span>Tổng thu nhập: '+fmtD(s.gross)+'</span><span>BHXH NLĐ: '+fmtD(s.emp)+'</span><span>Thuế TNCN: '+fmtD(s.pit)+'</span><span>Tổng thực lãnh: '+fmtD(s.net)+"</span></div>";
+    bindDeletes(draw);
+  }
+  draw();
+  var f = $("#fPay");
+  if (f) f.addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(f); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!d("name")) { toast("Nhập họ tên người nhận lương."); return; }
+    if (!guardMonth(state.month)) return;
+    DB.payroll.push({ id: uid(), month: state.month, name: d("name"), role: d("role"), base: num(d("base")),
+      bhxhBase: num(d("bhxhBase")), tripPay: num(d("tripPay")), bonus: num(d("bonus")), dependents: num(d("dependents")), advance: num(d("advance")) });
+    audit("Thêm lương " + d("name") + " " + monthLabel(state.month)); saveDB(); toast("Đã thêm dòng lương."); render();
+  });
+  $("#csvPay").addEventListener("click", function(){
+    var r = [["Họ tên","Nhóm","Lương cứng","Lương BHXH","Phụ cấp chuyến","Thưởng","Thu nhập","BHXH NLĐ","BHXH Cty","Thuế TNCN","Tạm ứng","Thực lãnh"]];
+    rows().forEach(function(p){ var c = calcPayroll(p); r.push([p.name, p.role==="TX"?"Tài xế":"Văn phòng", p.base, p.bhxhBase, p.tripPay, p.bonus, c.gross, c.empIns, c.compIns, c.pit, p.advance, c.net]); });
+    download("bang-luong-" + state.month + ".csv", "﻿" + toCSV(r), "text/csv;charset=utf-8");
+  });
+  $("#btnPit").addEventListener("click", function(){
+    var list = rows().map(function(p){ return { p: p, c: calcPayroll(p) }; }).filter(function(x){ return x.c.pit > 0; });
+    var tG=0,tB=0,tP=0;
+    var body = list.map(function(x, i){
+      tG+=x.c.net; tB+=x.c.empIns; tP+=x.c.pit;
+      return "<tr><td>"+(i+1)+"</td><td>"+esc(x.p.name)+"</td><td>"+(x.p.role==="TX"?"Tài xế":"Văn phòng")+'</td><td class="num">'+fmt(x.c.net)+'</td><td class="num">'+fmt(x.c.empIns)+'</td><td class="num">'+fmt(x.c.pit)+"</td></tr>";
+    }).join("");
+    var htmlP = '<div style="font-weight:700;font-size:15px">'+esc(DB.settings.company)+'</div>'
+      + '<h2 style="text-align:center;margin:14px 0 4px">BẢNG TỔNG HỢP THUẾ TNCN</h2>'
+      + '<div style="text-align:center;margin-bottom:12px">'+monthLabel(state.month)+"</div>"
+      + "<div>Số người nộp thuế TNCN: <b>"+list.length+" / "+rows().length+"</b> người</div>"
+      + '<table style="margin-top:10px"><thead><tr><th>STT</th><th>Họ tên</th><th>Nhóm</th><th class="num">Thực lãnh</th><th class="num">BHXH</th><th class="num">Thuế TNCN</th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="6" style="text-align:center">Không ai phải nộp thuế TNCN tháng này.</td></tr>')
+      + '<tr><td colspan="3"><b>Tổng cộng</b></td><td class="num"><b>'+fmt(tG)+'</b></td><td class="num"><b>'+fmt(tB)+'</b></td><td class="num"><b>'+fmt(tP)+"</b></td></tr>"
+      + '</tbody></table><div style="display:flex;justify-content:space-between;margin-top:34px;text-align:center"><div>Người lập biểu</div><div>Kế toán trưởng</div><div>Giám đốc</div></div>';
+    $("#dlgTitle").textContent = "Bản xem trước khi in — Thuế TNCN " + monthLabel(state.month);
+    $("#dlgBody").innerHTML = htmlP;
+    $("#printArea").innerHTML = htmlP;
+    $("#dlg").showModal();
+  });
+}
+
+/* ================= THU CHI ================= */
+function vThuChi(v){
+  var bal = DB.cash.reduce(function(s,c){ return s + (c.type==="Thu"?num(c.amount):-num(c.amount)); }, 0);
+  var html = '<div class="grid">' + stat("Số dư tiền (tất cả kỳ)", fmtShort(bal), "thu − chi theo sổ đã nhập", bal) + "</div>";
+  html += '<div class="panel" style="margin-top:16px">' + panelHead("Sổ thu chi — " + monthLabel(state.month), csvBtn("csvCash"))
+    + '<form class="rowform" id="fCash">'
+    + field("Ngày", inp("date","date", state.month+"-01"))
+    + field("Loại", '<select name="type"><option>Thu</option><option>Chi</option></select>')
+    + field("Diễn giải", inp("desc","text","","Thu cước khách… / trả dầu…"), "wide")
+    + field("Hình thức", '<select name="method"><option value="NH">Ngân hàng</option><option value="TM">Tiền mặt</option></select>')
+    + field("Số tiền (đ)", inp("amount","number","","0"))
+    + '<div class="act"><button class="btn primary" type="submit">+ Ghi sổ</button></div></form>'
+    + '<div id="cashTable"></div></div>';
+  v.innerHTML = html;
+  function draw(){
+    var rows = DB.cash.filter(function(c){ return monthOf(c.date)===state.month; }).sort(function(a,b){ return a.date<b.date?-1:1; });
+    var sT=0,sC=0;
+    var body = rows.map(function(c){
+      if (c.type==="Thu") sT += num(c.amount); else sC += num(c.amount);
+      return "<tr><td>"+esc(c.date)+"</td><td>"+(c.type==="Thu"?'<span class="pill ok">Thu</span>':'<span class="pill wait">Chi</span>')+"</td><td>"+esc(c.desc)+"</td><td>"+(c.method==="TM"?"Tiền mặt":"Ngân hàng")+'</td><td class="num '+(c.type==="Thu"?"pos":"neg")+'">'+(c.type==="Thu"?"+":"−")+fmt(c.amount)+"</td><td>"+delBtn("cash", c.id)+"</td></tr>";
+    }).join("");
+    $("#cashTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Ngày</th><th>Loại</th><th>Diễn giải</th><th>Hình thức</th><th class="num">Số tiền</th><th></th></tr></thead><tbody>'
+      + (body || '<tr><td colspan="6" class="empty">Chưa có thu chi trong tháng.</td></tr>')
+      + '</tbody></table></div><div class="totbar"><span>Thu: '+fmtD(sT)+'</span><span>Chi: '+fmtD(sC)+'</span><span>Chênh lệch tháng: '+fmtD(sT-sC)+"</span></div>";
+    bindDeletes(draw);
+  }
+  draw();
+  $("#fCash").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!guardMonth(monthOf(d("date")))) return;
+    DB.cash.push({ id: uid(), date: d("date"), type: d("type"), desc: d("desc"), method: d("method"), amount: num(d("amount")) });
+    audit("Ghi thu chi " + d("type") + " " + fmt(num(d("amount")))); saveDB(); toast("Đã ghi sổ."); render();
+  });
+  $("#csvCash").addEventListener("click", function(){
+    var r = [["Ngày","Loại","Diễn giải","Hình thức","Số tiền"]];
+    DB.cash.filter(function(c){ return monthOf(c.date)===state.month; }).forEach(function(c){ r.push([c.date,c.type,c.desc,c.method==="TM"?"Tiền mặt":"Ngân hàng",c.amount]); });
+    download("thu-chi-" + state.month + ".csv", "﻿" + toCSV(r), "text/csv;charset=utf-8");
+  });
+}
+
+/* ================= DANH MỤC ================= */
+function vDanhMuc(v){
+  var html = '<div class="panel">' + panelHead("Danh mục đối tác (khách hàng / nhà cung cấp)")
+    + '<form class="rowform" id="fPartner">'
+    + field("Tên đối tác", inp("name","text","",""), "wide")
+    + field("MST", inp("mst","text",""))
+    + field("Loại", '<select name="type"><option value="KH">Khách hàng</option><option value="NCC">Nhà cung cấp</option><option value="KH/NCC">Cả hai</option></select>')
+    + field("Hạn thanh toán (ngày)", inp("term","number","30"))
+    + field("Dư nợ phải thu đầu kỳ (đ)", inp("openRecv","number","0"))
+    + field("Dư nợ phải trả đầu kỳ (đ)", inp("openPay","number","0"))
+    + '<div class="act"><button class="btn primary" type="submit">+ Thêm đối tác</button></div></form>'
+    + '<div class="twrap"><table><thead><tr><th>Đối tác</th><th>MST</th><th>Loại</th><th class="num">Hạn TT</th><th class="num">Dư thu đầu kỳ</th><th class="num">Dư trả đầu kỳ</th><th></th></tr></thead><tbody>'
+    + DB.partners.map(function(p){
+        return "<tr><td><b>"+esc(p.name)+"</b></td><td>"+esc(p.mst)+"</td><td>"+esc(p.type)+'</td><td class="num">'+num(p.term)+'</td><td class="num">'+fmt(p.openRecv)+'</td><td class="num">'+fmt(p.openPay)+"</td><td>"+delBtn("partner", p.id)+"</td></tr>";
+      }).join("") + "</tbody></table></div></div>";
+  html += '<div class="panel">' + panelHead("Danh mục xe & tài xế")
+    + '<form class="rowform" id="fVehicle">'
+    + field("Biển số", inp("plate","text","","50F…"))
+    + field("Tài xế", inp("driver","text",""))
+    + field("Loại xe", '<select name="kind"><option value="HLT">Xe công ty HLT (theo cà vẹt)</option><option value="Ngoài">Xe ngoài</option></select>')
+    + '<div class="act"><button class="btn primary" type="submit">+ Thêm xe</button></div></form>'
+    + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Biển số</th><th>Tài xế</th><th>Loại</th><th></th></tr></thead><tbody>'
+    + DB.vehicles.map(function(x){
+        return "<tr><td><b>"+esc(x.plate)+"</b></td><td>"+esc(x.driver)+"</td><td>"+(x.kind==="HLT"?'<span class="pill hlt">Xe HLT</span>':'<span class="pill ngoai">Xe ngoài</span>')+"</td><td>"+delBtn("vehicle", x.id)+"</td></tr>";
+      }).join("") + "</tbody></table></div>"
+    + '<div style="padding:10px 16px" class="muted">Phân loại xe theo giấy đăng ký (cà vẹt): xe HLT là xe đứng tên công ty, còn lại là xe ngoài.</div></div>';
+  html += '<div class="panel">' + panelHead("Tài sản cố định & khấu hao")
+    + '<form class="rowform" id="fAsset">'
+    + field("Tên tài sản (xe / moóc)", inp("name","text","","Đầu kéo 50F…"), "wide")
+    + field("Nguyên giá (đ)", inp("cost","number","","0"))
+    + field("Số tháng khấu hao", inp("months","number","96"))
+    + field("Bắt đầu khấu hao (tháng)", inp("start","month", state.month))
+    + '<div class="act"><button class="btn primary" type="submit">+ Thêm tài sản</button></div></form>'
+    + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Tài sản</th><th class="num">Nguyên giá</th><th class="num">Tháng KH</th><th class="num">KH / tháng</th><th>Bắt đầu</th><th></th></tr></thead><tbody>'
+    + (DB.assets.length ? DB.assets.map(function(a){
+        return "<tr><td><b>"+esc(a.name)+"</b></td><td class='num'>"+fmt(a.cost)+"</td><td class='num'>"+num(a.months)+"</td><td class='num'>"+fmt(num(a.cost)/Math.max(num(a.months),1))+"</td><td>"+esc(a.start)+"</td><td>"+delBtn("asset", a.id)+"</td></tr>";
+      }).join("") : '<tr><td colspan="6" class="empty">Chưa có tài sản. Thêm nguyên giá xe/moóc để khấu hao tự chạy vào chi phí báo cáo.</td></tr>')
+    + "</tbody></table></div></div>";
+  v.innerHTML = html;
+  bindDeletes(null);
+  $("#fPartner").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!d("name")) { toast("Nhập tên đối tác."); return; }
+    DB.partners.push({ id: uid(), name: d("name"), mst: d("mst"), type: d("type"), term: num(d("term"))||30, openRecv: num(d("openRecv")), openPay: num(d("openPay")) });
+    audit("Thêm đối tác " + d("name")); saveDB(); toast("Đã thêm đối tác."); render();
+  });
+  $("#fVehicle").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!d("plate")) { toast("Nhập biển số xe."); return; }
+    DB.vehicles.push({ id: uid(), plate: d("plate"), driver: d("driver"), kind: d("kind") });
+    audit("Thêm xe " + d("plate")); saveDB(); toast("Đã thêm xe."); render();
+  });
+  $("#fAsset").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    DB.assets.push({ id: uid(), name: d("name"), cost: num(d("cost")), months: num(d("months"))||96, start: d("start") });
+    audit("Thêm tài sản " + d("name")); saveDB(); toast("Đã thêm tài sản."); render();
+  });
+}
+
+/* ================= BÁO CÁO & THUẾ ================= */
+function vBaoCao(v){
+  var m = state.month; var f = monthFigures(m);
+  var revTrip = 0, costTrip = 0, revInv = 0;
+  DB.trips.forEach(function(t){ if (monthOf(t.date)===m){ revTrip += num(t.freight); costTrip += tripCost(t); } });
+  DB.invOut.forEach(function(inv){ if (monthOf(inv.date)===m && !inv.viaTrip) revInv += num(inv.beforeTax); });
+  var payTX = 0, payVP = 0;
+  DB.payroll.forEach(function(p){ if (p.month===m){ var c = calcPayroll(p); if (p.role==="TX") payTX += c.compCost; else payVP += c.compCost; } });
+  var expOther = DB.expenses.filter(function(e){ return monthOf(e.date)===m; }).reduce(function(s,e){ return s+num(e.amount); }, 0);
+  var dep = f.cost - costTrip - expOther - payTX - payVP;
+  var gross = (revTrip + revInv) - (costTrip + payTX);
+  var profitBT = gross - (expOther + payVP + dep);
+  var cit = profitBT > 0 ? Math.round(profitBT * 0.20) : 0;
+  var html = '<div class="twocol"><div class="panel">' + panelHead("Báo cáo kết quả kinh doanh — " + monthLabel(m))
+    + '<div style="padding:6px 16px 14px">'
+    + kv("Doanh thu cước chuyến", revTrip) + kv("Doanh thu hóa đơn (ngoài chuyến)", revInv)
+    + kv("<b>Tổng doanh thu</b>", revTrip + revInv)
+    + kv("Giá vốn chuyến (nâng hạ, dầu, vé bãi, neo, phát sinh)", -costTrip)
+    + kv("Lương tài xế + BHXH cty đóng (632)", -payTX)
+    + kv("<b>Lãi gộp</b>", gross)
+    + kv("Chi phí khác (mục Chi phí)", -expOther) + kv("Lương văn phòng + BHXH (642)", -payVP) + kv("Khấu hao tài sản", -Math.round(dep))
+    + kv("<b>Lợi nhuận trước thuế</b>", profitBT)
+    + kv("Thuế TNDN tạm tính 20%", -cit)
+    + '<div class="kv total"><span>Lợi nhuận sau thuế</span><b class="'+(profitBT-cit<0?"neg":"pos")+'">'+fmtD(profitBT-cit)+"</b></div>"
+    + '<div class="muted" style="margin-top:8px">Số tạm tính nội bộ từ dữ liệu đã nhập trong tháng — trước khi nộp chính thức cần kế toán đối chiếu sổ sách đầy đủ.</div>'
+    + "</div></div>"
+    + '<div class="panel">' + panelHead("Thuế GTGT — " + monthLabel(m))
+    + '<div style="padding:6px 16px 14px">'
+    + kv("Thuế GTGT bán ra", f.vatOut) + kv("Thuế GTGT mua vào được khấu trừ", -f.vatIn)
+    + '<div class="kv total"><span>Phải nộp trong tháng</span><b>'+fmtD(f.vat)+"</b></div>"
+    + kv("Số hóa đơn bán ra", DB.invOut.filter(function(x){ return monthOf(x.date)===m; }).length)
+    + kv("Số hóa đơn mua vào", DB.invIn.filter(function(x){ return monthOf(x.date)===m; }).length)
+    + '<div class="muted" style="margin-top:8px">Chưa gồm thuế khấu trừ kỳ trước chuyển sang — khi kê khai trên HTKK, cộng thêm số dư kỳ trước nếu có.</div>'
+    + "</div></div></div>";
+  html += '<div class="panel">' + panelHead("Nhật ký bút toán tự sinh — " + monthLabel(m), csvBtn("csvJr"))
+    + '<div id="jrTable"></div></div>';
+  v.innerHTML = html;
+  var jr = buildJournal(m);
+  $("#jrTable").innerHTML = '<div class="twrap"><table><thead><tr><th>Ngày</th><th>Diễn giải</th><th>TK Nợ</th><th>TK Có</th><th class="num">Số tiền</th></tr></thead><tbody>'
+    + (jr.length ? jr.map(function(j){
+        return "<tr><td>"+esc(j.date)+"</td><td>"+esc(j.desc)+"</td><td>"+j.dr+"</td><td>"+j.cr+'</td><td class="num">'+fmt(j.amt)+"</td></tr>";
+      }).join("") : '<tr><td colspan="5" class="empty">Chưa có bút toán trong tháng.</td></tr>')
+    + "</tbody></table></div>";
+  $("#csvJr").addEventListener("click", function(){
+    var r = [["Ngày","Diễn giải","TK Nợ","TK Có","Số tiền"]];
+    jr.forEach(function(j){ r.push([j.date,j.desc,j.dr,j.cr,Math.round(j.amt)]); });
+    download("nhat-ky-" + m + ".csv", "﻿" + toCSV(r), "text/csv;charset=utf-8");
+  });
+}
+function kv(label, val){
+  return '<div class="kv"><span>'+label+'</span><b class="'+(val<0?"neg":"")+'">'+fmtD(val)+"</b></div>";
+}
+function buildJournal(m){
+  var jr = [];
+  function inM(d){ return monthOf(d)===m; }
+  DB.trips.forEach(function(t){ if (!inM(t.date)) return;
+    jr.push({ date: t.date, desc: "Doanh thu cước cont " + (t.cont||"") + " — " + t.customer, dr: "131", cr: "511", amt: num(t.freight) });
+    if (tripCost(t)) jr.push({ date: t.date, desc: "Chi phí chuyến cont " + (t.cont||""), dr: "632", cr: "331/111", amt: tripCost(t) });
+  });
+  DB.invOut.forEach(function(inv){ if (!inM(inv.date) || inv.viaTrip) return;
+    jr.push({ date: inv.date, desc: "Hóa đơn bán ra " + inv.number + " — " + inv.partner, dr: "131", cr: "511/3331", amt: invTotal(inv) });
+  });
+  DB.invIn.forEach(function(inv){ if (!inM(inv.date)) return;
+    jr.push({ date: inv.date, desc: "Hóa đơn mua vào " + inv.number + " — " + inv.partner + " (" + (inv.cat||"") + ")", dr: "152/632/133", cr: "331", amt: invTotal(inv) });
+  });
+  DB.expenses.forEach(function(e){ if (!inM(e.date)) return;
+    jr.push({ date: e.date, desc: "Chi phí " + e.cat + " — " + e.desc, dr: "642/632", cr: "111/112", amt: num(e.amount) });
+  });
+  DB.payroll.forEach(function(p){ if (p.month!==m) return;
+    var c = calcPayroll(p);
+    jr.push({ date: m+"-28", desc: "Lương " + p.name + " (" + (p.role==="TX"?"tài xế":"văn phòng") + ")", dr: p.role==="TX"?"632":"642", cr: "334", amt: c.gross + c.compIns });
+    jr.push({ date: m+"-28", desc: "Khấu trừ BHXH + thuế TNCN của " + p.name, dr: "334", cr: "338/3335", amt: c.empIns + c.pit });
+  });
+  DB.cash.forEach(function(c){ if (!inM(c.date)) return;
+    jr.push({ date: c.date, desc: (c.type==="Thu"?"Thu tiền — ":"Chi tiền — ") + c.desc, dr: c.type==="Thu" ? (c.method==="TM"?"111":"112") : "331/642", cr: c.type==="Thu" ? "131/511" : (c.method==="TM"?"111":"112"), amt: num(c.amount) });
+  });
+  return jr.sort(function(a,b){ return a.date<b.date?-1:1; });
+}
+
+/* ================= CÀI ĐẶT ================= */
+function vCaiDat(v){
+  var u = currentUser();
+  var html = '<div class="twocol"><div class="panel">' + panelHead("Thông tin công ty")
+    + '<form class="rowform" id="fCompany" style="grid-template-columns:1fr">'
+    + field("Tên công ty", inp("company","text", DB.settings.company))
+    + field("Mã số thuế", inp("mst","text", DB.settings.mst))
+    + field("Địa chỉ", inp("address","text", DB.settings.address))
+    + field("Tài khoản ngân hàng", inp("bank","text", DB.settings.bank))
+    + '<div class="act"><button class="btn primary" type="submit">Lưu thông tin</button></div></form></div>'
+    + '<div class="panel">' + panelHead("Tài khoản đăng nhập")
+    + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Vai trò</th><th></th></tr></thead><tbody>'
+    + DB.users.map(function(x){
+        return "<tr><td><b>"+esc(x.user)+"</b></td><td>"+esc(x.name)+"</td><td>"+(x.role==="KTT"?"Kế toán trưởng":"Kế toán")+"</td><td>"+(x.user!==session.user ? delBtn("user", x.id) : "")+"</td></tr>";
+      }).join("") + "</tbody></table></div>"
+    + '<form class="rowform" id="fPass" style="grid-template-columns:1fr">'
+    + field("Mật khẩu mới cho tài khoản đang đăng nhập (" + esc(session.user) + ")", inp("newpass","password","","Ít nhất 6 ký tự"))
+    + '<div class="act"><button class="btn primary" type="submit">Đổi mật khẩu</button></div></form>'
+    + '<form class="rowform" id="fUser">'
+    + field("Tên đăng nhập mới", inp("nuser","text",""))
+    + field("Mật khẩu", inp("npass","password",""))
+    + field("Họ tên", inp("nname","text",""))
+    + field("Vai trò", '<select name="nrole"><option value="KT">Kế toán</option><option value="KTT">Kế toán trưởng</option></select>')
+    + '<div class="act"><button class="btn" type="submit">+ Thêm tài khoản</button></div></form></div></div>';
+  html += '<div class="twocol"><div class="panel">' + panelHead("Khóa sổ theo tháng")
+    + '<div style="padding:14px 16px"><div class="toolbar"><input type="month" id="lockMonth" value="'+state.month+'" style="width:auto" />'
+    + '<button class="btn" id="btnLock">Khóa tháng này</button>'
+    + (session.role==="KTT" ? '<button class="btn danger" id="btnUnlock">Mở khóa (Kế toán trưởng)</button>' : '<span class="muted">Mở khóa: chỉ Kế toán trưởng.</span>')
+    + "</div>"
+    + '<div style="margin-top:10px">' + (DB.locked.length ? DB.locked.slice().sort().map(function(m){ return '<span class="pill wait" style="margin:0 6px 6px 0">Đã khóa: '+monthLabel(m)+"</span>"; }).join("") : '<span class="muted">Chưa khóa tháng nào.</span>') + "</div>"
+    + '<div class="muted" style="margin-top:6px">Tháng đã khóa sẽ không thêm/sửa/xóa được chứng từ của tháng đó.</div></div></div>'
+    + '<div class="panel">' + panelHead("Sao lưu & dữ liệu")
+    + '<div style="padding:14px 16px"><div class="toolbar">'
+    + '<button class="btn primary" id="btnBk">Tải bản sao lưu (JSON)</button>'
+    + '<button class="btn" id="btnHtml2">Tải file HTML phần mềm</button>'
+    + '<button class="btn danger" id="btnWipe">Xóa toàn bộ dữ liệu</button></div>'
+    + '<div class="muted" style="margin-top:10px">Đưa lên GitHub: tải file HTML này lên repo, bật GitHub Pages là dùng được ở mọi máy. Dữ liệu nằm trong trình duyệt của từng máy — chuyển máy thì Xuất dữ liệu (JSON) ở máy cũ rồi Nhập dữ liệu ở máy mới.</div></div></div></div>';
+  html += '<div class="panel">' + panelHead("Nhật ký thao tác gần nhất")
+    + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Thời gian</th><th>Người dùng</th><th>Thao tác</th></tr></thead><tbody>'
+    + (DB.audit.length ? DB.audit.slice(0,30).map(function(a){ return "<tr><td>"+esc(a.time)+"</td><td>"+esc(a.user)+"</td><td>"+esc(a.action)+"</td></tr>"; }).join("") : '<tr><td colspan="3" class="empty">Chưa có thao tác nào.</td></tr>')
+    + "</tbody></table></div></div>";
+  v.innerHTML = html;
+  bindDeletes(null);
+  $("#fCompany").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    DB.settings.company = d("company") || DB.settings.company; DB.settings.mst = d("mst");
+    DB.settings.address = d("address"); DB.settings.bank = d("bank");
+    audit("Cập nhật thông tin công ty"); saveDB(); toast("Đã lưu."); render();
+  });
+  $("#fPass").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var np = (fd.get("newpass")||"").toString();
+    if (np.length < 6) { toast("Mật khẩu phải có ít nhất 6 ký tự."); return; }
+    var me = currentUser(); if (me) { me.pass = np; audit("Đổi mật khẩu"); saveDB(); toast("Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới."); }
+    this.reset();
+  });
+  $("#fUser").addEventListener("submit", function(e){
+    e.preventDefault(); var fd = new FormData(this); var d = function(k){ return (fd.get(k)||"").toString().trim(); };
+    if (!d("nuser") || d("npass").length < 6) { toast("Nhập tên đăng nhập và mật khẩu ≥ 6 ký tự."); return; }
+    if (DB.users.some(function(x){ return x.user === d("nuser"); })) { toast("Tên đăng nhập đã tồn tại."); return; }
+    DB.users.push({ id: uid(), user: d("nuser"), pass: d("npass"), name: d("nname") || d("nuser"), role: d("nrole") });
+    audit("Thêm tài khoản " + d("nuser")); saveDB(); toast("Đã thêm tài khoản."); render();
+  });
+  $("#btnLock").addEventListener("click", function(){
+    var m = $("#lockMonth").value; if (!m) return;
+    if (DB.locked.indexOf(m) < 0) DB.locked.push(m);
+    audit("Khóa sổ " + monthLabel(m)); saveDB(); toast("Đã khóa " + monthLabel(m)); render();
+  });
+  var un = $("#btnUnlock");
+  if (un) un.addEventListener("click", function(){
+    var m = $("#lockMonth").value;
+    DB.locked = DB.locked.filter(function(x){ return x !== m; });
+    audit("Mở khóa " + monthLabel(m)); saveDB(); toast("Đã mở khóa " + monthLabel(m)); render();
+  });
+  $("#btnBk").addEventListener("click", exportJSON);
+  $("#btnHtml2").addEventListener("click", downloadHTML);
+  $("#btnWipe").addEventListener("click", function(){
+    var b = this;
+    if (b.dataset.arm) {
+      DB = seedData(); audit("Xóa toàn bộ dữ liệu"); saveDB();
+      toast("Đã xóa toàn bộ dữ liệu, quay về trạng thái ban đầu."); render();
+    } else {
+      b.dataset.arm = "1"; b.textContent = "Bấm lần nữa để XÓA THẬT (không khôi phục được)";
+      setTimeout(function(){ delete b.dataset.arm; b.textContent = "Xóa toàn bộ dữ liệu"; }, 5000);
+    }
+  });
+}
+
+/* ---------- Xuất / nhập / tải HTML ---------- */
+function exportJSON(){
+  audit("Xuất dữ liệu JSON"); saveDB();
+  download("quan-ly-van-tai-" + todayStr() + ".json", JSON.stringify(DB, null, 2), "application/json");
+  toast("Đã tải file dữ liệu JSON.");
+}
+function importJSON(){
+  var file = this.files && this.files[0]; if (!file) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try {
+      var d = JSON.parse(rd.result);
+      if (!d || !d.settings || !d.users) throw new Error("bad");
+      DB = d; audit("Nhập dữ liệu từ file JSON"); saveDB();
+      if (!currentUser()) { doLogout(); toast("Đã nhập dữ liệu. Đăng nhập lại bằng tài khoản trong file vừa nhập."); return; }
+      toast("Đã nhập dữ liệu thành công."); render();
+    } catch(e){ toast("File không đúng định dạng dữ liệu của phần mềm."); }
+  };
+  rd.readAsText(file);
+  this.value = "";
+}
+function downloadHTML(){
+  var html = "<!doctype html>\n" + document.documentElement.outerHTML;
+  download("quan-ly-van-tai-hlt.html", html, "text/html;charset=utf-8");
+  toast("Đã tải file HTML — đưa file này lên GitHub Pages là dùng được.");
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
