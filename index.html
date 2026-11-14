@@ -964,6 +964,151 @@ function overdueList(){
 }
 
 /* ================= IMPORT DỮ LIỆU (mục riêng, dễ tìm) ================= */
+/* ---- ⑤ File dữ liệu tổng hợp JSON (meta.type = "hlt-bulk-data") ----
+   Một file JSON chứa toàn bộ dữ liệu Daisy đã cung cấp, nạp 1 lần vào đúng
+   các kho hiện hữu. Chống trùng theo khóa của từng nhóm; nạp lại không trùng.
+   KHÔNG nhúng dữ liệu thật vào file HTML này (repo GitHub công khai) —
+   file dữ liệu tổng hợp chỉ nằm trên máy của người dùng. */
+function bulkNormPlate(p){ return String(p||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
+function bulkVat(amount, vat, total){
+  amount = num(amount); vat = num(vat); total = num(total);
+  if (!amount && total) amount = total - vat;
+  return { beforeTax: amount, vatRate: amount ? Math.round(vat / amount * 100 * 10000) / 10000 : 0 };
+}
+function bulkRoleType(role){
+  role = String(role || "").toLowerCase();
+  if (role === "supplier" || role === "ncc") return "NCC";
+  if (role === "both" || role === "kh/ncc") return "KH/NCC";
+  return "KH";
+}
+function bulkReasonable(v){
+  v = String(v == null ? "" : v).toLowerCase();
+  if (v === "yes" || v === "hop") return "hop";
+  if (v === "no" || v === "khong") return "khong";
+  return "chua";
+}
+function parseBulkText(text){
+  var data = JSON.parse(text);
+  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("bad");
+  if (!data.meta || data.meta.type !== "hlt-bulk-data") throw new Error("type");
+  return data;
+}
+function bulkSampleData(){
+  return {
+    meta: { type: "hlt-bulk-data", version: 1 },
+    partners: [{ name: "MẪU - Công ty Vận tải ABC", taxCode: "0123456789", role: "both", address: "123 Đường Mẫu, Phường Mẫu", note: "Dòng mẫu trung tính — thay bằng dữ liệu thật hoặc xóa" }],
+    vehicles: [{ plate: "51A-123.45", kind: "tractor", brand: "MẪU - Hãng xe", driver: "Nguyễn Văn Mẫu", owner: "HLT", note: "Mẫu" }],
+    salesInvoices: [{ date: "2026-11-05", symbol: "1C26TMA", number: "00000001", buyerName: "MẪU - Công ty Vận tải ABC", buyerTax: "0123456789", amount: 10000000, vat: 800000, total: 10800000, note: "MẪU - Cước vận chuyển" }],
+    purchaseInvoices: [{ date: "2026-11-06", symbol: "1C26TMB", number: "00000002", sellerName: "MẪU - Trạm dầu ABC", sellerTax: "9876543210", amount: 2000000, vat: 200000, total: 2200000, note: "MẪU - Dầu DO", reasonable: "unset" }],
+    bankLines: [{ date: "2026-11-06", ref: "FT0000000000", counterparty: "MẪU - Công ty Vận tải ABC", description: "MẪU - Thanh toán cước", debit: 0, credit: 10800000 }],
+    assets: [{ plate: "51A-123.45", name: "MẪU - Đầu kéo 51A-123.45", buyDate: "2026-10-01", cost: 120000000, vatDeductible: 9600000, lifeYears: 6, depStart: "2026-11", note: "Mẫu" }],
+    expenses: [{ date: "2026-11-07", category: "Thuê xe", vehicle: "51A-123.45", partner: "MẪU - Công ty Vận tải ABC", amount: 1000000, note: "MẪU - Chi phí tháng" }],
+    docs: [{ date: "2026-11-07", type: "Biên lai phí", number: "0000000", issuer: "MẪU - Cơ quan thu phí", plate: "51A-123.45", description: "MẪU - Phí sử dụng đường bộ", amount: 1200000, validFrom: "2026-11-07", validTo: "2027-05-06", driveLink: "", note: "Mẫu" }]
+  };
+}
+function bulkPlan(data){
+  function arr(x){ return Array.isArray(x) ? x : []; }
+  var wP = DB.partners.slice(), wV = DB.vehicles.slice(), wOut = DB.invOut.slice(), wIn = DB.invIn.slice(),
+      wB = (DB.bankStmt || []).slice(), wA = DB.assets.slice(), wE = DB.expenses.slice(), wD = DB.docs.slice();
+  var plan = { partners: [], vehicles: [], salesInvoices: [], purchaseInvoices: [], bankLines: [], assets: [], expenses: [], docs: [] };
+  arr(data.partners).forEach(function(p){
+    if (!p || !String(p.name || "").trim()) return;
+    var rec = { name: String(p.name).trim(), mst: String(p.taxCode || "").trim(), type: bulkRoleType(p.role), term: 30, openRecv: 0, openPay: 0, address: p.address || "", note: p.note || "" };
+    var dup = wP.some(function(x){ if (rec.mst && x.mst) return x.mst === rec.mst; return String(x.name || "").trim().toLowerCase() === rec.name.toLowerCase(); });
+    plan.partners.push({ rec: rec, dup: dup }); if (!dup) wP.push(rec);
+  });
+  arr(data.vehicles).forEach(function(vv){
+    if (!vv || !String(vv.plate || "").trim()) return;
+    var rec = { plate: String(vv.plate).trim(), driver: vv.driver || "", kind: String(vv.owner || "").toLowerCase() === "external" ? "Ngoài" : "HLT", vehType: vv.kind || "", brand: vv.brand || "", note: vv.note || "", norm: 0 };
+    var np = bulkNormPlate(rec.plate);
+    var dup = wV.some(function(x){ return bulkNormPlate(x.plate) === np; });
+    plan.vehicles.push({ rec: rec, dup: dup }); if (!dup) wV.push(rec);
+  });
+  arr(data.salesInvoices).forEach(function(s){
+    if (!s || !String(s.number == null ? "" : s.number).trim()) return;
+    var vt = bulkVat(s.amount, s.vat, s.total);
+    var rec = { date: normDate(s.date), symbol: String(s.symbol || "").trim(), number: String(s.number).trim(), partner: s.buyerName || "", mst: String(s.buyerTax || "").trim(), desc: s.note || "", beforeTax: vt.beforeTax, vatRate: vt.vatRate, paid: 0, viaTrip: false };
+    var dup = invDupIn(wOut, rec);
+    plan.salesInvoices.push({ rec: rec, dup: dup }); if (!dup) wOut.push(rec);
+  });
+  arr(data.purchaseInvoices).forEach(function(s){
+    if (!s || !String(s.number == null ? "" : s.number).trim()) return;
+    var vt = bulkVat(s.amount, s.vat, s.total);
+    var rec = { date: normDate(s.date), symbol: String(s.symbol || "").trim(), number: String(s.number).trim(), partner: s.sellerName || "", mst: String(s.sellerTax || "").trim(), desc: s.note || "", cat: "Khác", beforeTax: vt.beforeTax, vatRate: vt.vatRate, paid: 0, hopLy: bulkReasonable(s.reasonable), lyDoKhongHopLy: "" };
+    var dup = invDupIn(wIn, rec);
+    plan.purchaseInvoices.push({ rec: rec, dup: dup }); if (!dup) wIn.push(rec);
+  });
+  arr(data.bankLines).forEach(function(b){
+    if (!b) return;
+    var rec = { date: normDate(b.date), desc: b.description || "", ref: String(b.ref || "").trim(), cp: b.counterparty || "", thu: Math.abs(num(b.credit)), chi: Math.abs(num(b.debit)) };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.date) || (!rec.thu && !rec.chi)) return;
+    var dup = wB.some(function(x){ return stmtDup(x, rec); });
+    plan.bankLines.push({ rec: rec, dup: dup }); if (!dup) wB.push(rec);
+  });
+  arr(data.assets).forEach(function(a){
+    if (!a || !String(a.plate || "").trim()) return;
+    var months = Math.round(num(a.lifeYears) * 12); if (!months) months = 72;
+    var start = String(a.depStart || "").slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(start)) start = String(a.buyDate || "").slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(start)) start = curMonth();
+    var rec = { name: a.name || ("Tài sản " + a.plate), plate: String(a.plate).trim(), cost: num(a.cost), months: months, start: start, buyDate: a.buyDate || "", vatDeductible: num(a.vatDeductible), note: a.note || "" };
+    var np = bulkNormPlate(rec.plate);
+    var dup = wA.some(function(x){
+      if (x.plate) return bulkNormPlate(x.plate) === np;
+      return np.length >= 6 && bulkNormPlate(x.name || "").indexOf(np) >= 0;
+    });
+    plan.assets.push({ rec: rec, dup: dup }); if (!dup) wA.push(rec);
+  });
+  arr(data.expenses).forEach(function(e){
+    if (!e) return;
+    var rec = { date: normDate(e.date), cat: e.category || "Khác", desc: e.note || "", plate: e.vehicle || "", amount: num(e.amount), hasInv: false, partner: e.partner || "" };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.date)) return;
+    var dup = wE.some(function(x){ return x.date === rec.date && (x.cat || "") === rec.cat && (x.plate || "") === rec.plate && num(x.amount) === rec.amount && (x.desc || "") === rec.desc; });
+    plan.expenses.push({ rec: rec, dup: dup }); if (!dup) wE.push(rec);
+  });
+  arr(data.docs).forEach(function(d){
+    if (!d) return;
+    var rec = { loai: d.type || "Khác", ngay: normDate(d.date), so: String(d.number == null ? "" : d.number).trim(), kyHieu: "", phatHanh: d.issuer || "", bienSo: d.plate || "", noiDung: d.description || "", soTien: num(d.amount), tuNgay: d.validFrom ? normDate(d.validFrom) : "", denNgay: d.validTo ? normDate(d.validTo) : "", linkDrive: d.driveLink || "", ghiChu: d.note || "" };
+    if (!rec.ngay && !rec.so && !rec.noiDung) return;
+    var dup = wD.some(function(x){
+      if (x.so && rec.so) return x.so === rec.so && x.ngay === rec.ngay && (x.bienSo || "") === rec.bienSo;
+      return x.ngay === rec.ngay && (x.bienSo || "") === rec.bienSo && (x.noiDung || "") === rec.noiDung && num(x.soTien) === rec.soTien;
+    });
+    plan.docs.push({ rec: rec, dup: dup }); if (!dup) wD.push(rec);
+  });
+  return plan;
+}
+function applyBulkPlan(plan){
+  if (!DB.bankStmt) DB.bankStmt = [];
+  var labels = { partners: "đối tác", vehicles: "xe", salesInvoices: "HĐ bán ra", purchaseInvoices: "HĐ mua vào", bankLines: "dòng sao kê", assets: "tài sản", expenses: "chi phí", docs: "chứng từ" };
+  var added = {}, total = 0;
+  function ensurePartner(name, mst, type){
+    if (!name) return;
+    if (DB.partners.some(function(p){ return p.name === name; })) return;
+    DB.partners.push({ id: uid(), name: name, mst: mst || "", type: type, term: 30, openRecv: 0, openPay: 0 });
+  }
+  function pushAll(group, collName){
+    var n = 0;
+    plan[group].forEach(function(it){
+      if (it.dup) return;
+      if (group === "salesInvoices") ensurePartner(it.rec.partner, it.rec.mst, "KH");
+      if (group === "purchaseInvoices") ensurePartner(it.rec.partner, it.rec.mst, "NCC");
+      it.rec.id = uid();
+      DB[collName].push(it.rec); n++;
+    });
+    added[group] = n; total += n;
+  }
+  pushAll("partners", "partners");
+  pushAll("vehicles", "vehicles");
+  pushAll("salesInvoices", "invOut");
+  pushAll("purchaseInvoices", "invIn");
+  pushAll("bankLines", "bankStmt");
+  pushAll("assets", "assets");
+  pushAll("expenses", "expenses");
+  pushAll("docs", "docs");
+  var detail = Object.keys(labels).filter(function(k){ return added[k]; }).map(function(k){ return labels[k] + " " + added[k]; }).join(" · ");
+  return { total: total, detail: detail, added: added };
+}
 function normTxt(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d"); }
 function parseMoney(s){
   s = String(s == null ? "" : s).trim(); if (!s) return 0;
@@ -1059,7 +1204,7 @@ function vImport(v){
   var out10 = DB.invOut.filter(function(x){ return monthOf(x.date)==="2026-10"; }).length;
   var chuaN = DB.invIn.filter(function(x){ return hopLyOf(x)==="chua"; }).length;
   var html = '<div class="panel" style="border-left:5px solid var(--amber1)">' + panelHead("Nạp dữ liệu hóa đơn đến hết tháng 10/2026 — từ file CQT trên máy của Daisy")
-    + '<div style="padding:2px 16px 14px" class="muted">Để an toàn khi đưa lên GitHub công khai, <b>file HTML này không chứa sẵn số liệu</b> — dữ liệu chỉ lưu trong trình duyệt sau khi Daisy nạp file. Cách nạp bộ dữ liệu T9–T10 đã xuất từ cổng thuế: vào mục ① bên dưới, chọn lần lượt từng file danh sách hóa đơn (cả 3 kênh: không mã · máy tính tiền · danh sách thường) — chọn đúng loại Mua vào / Bán ra, xem trước rồi bấm Nhập; hóa đơn trùng tự bỏ qua. Sao kê Techcombank nạp ở mục ② (tự khớp sổ và gợi ý hóa đơn theo diễn giải). Trạng thái hiện tại trong máy này: <b>' + DB.invIn.length + ' hóa đơn mua vào</b> (T9: ' + in9 + ' · T10: ' + in10 + '), <b>' + DB.invOut.length + ' hóa đơn bán ra</b> (T10: ' + out10 + '), <b>' + (DB.bankStmt||[]).length + ' dòng sao kê</b>, ' + chuaN + ' hóa đơn mua vào đang Chưa xét. <b>Lưu ý:</b> không đưa file hóa đơn, sao kê hay file sao lưu JSON lên repo GitHub công khai.</div></div>';
+    + '<div style="padding:2px 16px 14px" class="muted">Để an toàn khi đưa lên GitHub công khai, <b>file HTML này không chứa sẵn số liệu</b> — dữ liệu chỉ lưu trong trình duyệt sau khi Daisy nạp file. Cách nạp bộ dữ liệu T9–T10 đã xuất từ cổng thuế: vào mục ① bên dưới, chọn lần lượt từng file danh sách hóa đơn (cả 3 kênh: không mã · máy tính tiền · danh sách thường) — chọn đúng loại Mua vào / Bán ra, xem trước rồi bấm Nhập; hóa đơn trùng tự bỏ qua. Sao kê Techcombank nạp ở mục ② (tự khớp sổ và gợi ý hóa đơn theo diễn giải). File dữ liệu tổng hợp JSON (đối tác, xe, tài sản, chi phí, kho chứng từ…) nạp ở mục ⑤ phía dưới. Trạng thái hiện tại trong máy này: <b>' + DB.invIn.length + ' hóa đơn mua vào</b> (T9: ' + in9 + ' · T10: ' + in10 + '), <b>' + DB.invOut.length + ' hóa đơn bán ra</b> (T10: ' + out10 + '), <b>' + (DB.bankStmt||[]).length + ' dòng sao kê</b>, ' + chuaN + ' hóa đơn mua vào đang Chưa xét. <b>Lưu ý:</b> không đưa file hóa đơn, sao kê hay file sao lưu JSON lên repo GitHub công khai.</div></div>';
   html += '<div class="panel" style="border:2px solid var(--amber1)">' + panelHead("① IMPORT HÓA ĐƠN TỪ CƠ QUAN THUẾ (CQT)")
     + '<div class="importbox"><div class="muted" style="margin-bottom:10px">Đây là cổng nhập hóa đơn chính: tải file danh sách hóa đơn từ cổng thuế (Excel .xlsx hoặc CSV) — hoặc dán dữ liệu — rồi <b>xem trước</b>, hệ thống <b>tự bỏ hóa đơn trùng số + ký hiệu</b>. Với <b>hóa đơn mua vào</b>, ở bảng xem trước Daisy chọn từng hóa đơn là <b>Chi phí hợp lý</b> (được khấu trừ thuế GTGT & tính chi phí được trừ), <b>Không hợp lý</b> hay <b>Chưa xét</b> — giống cách MISA kiểm tra. Sau khi nhập, đổi lại bất cứ lúc nào ở cột “Chi phí hợp lý” trong tab Hóa đơn mua vào.</div>'
     + '<div class="cols"><div><label>Loại hóa đơn</label><select id="impKind"><option value="in">Hóa đơn MUA VÀO (từ nhà cung cấp)</option><option value="out">Hóa đơn BÁN RA (cho khách hàng)</option></select>'
@@ -1082,6 +1227,13 @@ function vImport(v){
     + '<span style="display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="margin:0">Nạp JSON từ script:</label><select id="jsonKind" style="width:auto"><option value="auto">Tự nhận diện mua/bán</option><option value="in">Hóa đơn mua vào</option><option value="out">Hóa đơn bán ra</option></select><input type="file" class="fileinp" id="jsonFile" accept=".json" style="width:auto" /></span></div></div>'
     + '<div><b>Cách C — Tờ khai thuế trên thuedientu / dịch vụ công.</b><div class="muted">Tờ khai GTGT 01/GTGT và TNCN 05/KK nộp qua <b>thuedientu.gdt.gov.vn</b> (hoặc HTKK) bằng chữ ký số của công ty — không cổng nào cho phép một trang web tĩnh ký và nộp thay. Phần mềm hỗ trợ tới mức tối đa có thể: ở tab <b>Báo cáo & Thuế</b>, mỗi tờ khai có nút <b>Xuất XML HTKK</b> để nạp file vào HTKK kiểm tra rồi ký nộp, và nút <b>In đúng mẫu</b> (Thông tư 80/2021) để đối chiếu trước khi nộp.</div></div>'
     + '</div></div>';
+  html += '<div class="panel" style="border:2px solid var(--amber1)">' + panelHead("⑤ FILE DỮ LIỆU TỔNG HỢP (JSON) — NẠP TOÀN BỘ DỮ LIỆU TỪ 1 FILE")
+    + '<div class="importbox"><div class="muted" style="margin-bottom:10px">Chọn 1 file <b>.json</b> theo cấu trúc dữ liệu tổng hợp của HLT (<code>meta.type = "hlt-bulk-data"</code>, <code>version = 1</code>) — file này gói toàn bộ những gì Daisy đã cung cấp: <b>đối tác · xe · hóa đơn bán ra · hóa đơn mua vào · sao kê ngân hàng · tài sản &amp; khấu hao · chi phí · kho chứng từ</b>. Chọn file (hoặc dán nội dung) rồi <b>xem trước số dòng từng nhóm</b>: phần mềm tự nhận diện dòng <b>trùng</b> theo khóa từng nhóm — hóa đơn theo <b>ký hiệu + số + MST</b> người bán/mua, sao kê theo <b>số tham chiếu (ref)</b>, chứng từ theo <b>số + ngày + biển số</b>, tài sản theo <b>biển số</b>, đối tác theo <b>MST</b>, xe theo <b>biển số</b> — nên <b>nạp lại cùng 1 file không tạo trùng</b>. Hóa đơn mua vào mặc định trạng thái <b>Chưa xét</b> (Daisy tự chấm hợp lý sau ở tab Hóa đơn mua vào), trừ khi file ghi sẵn <code>reasonable: "yes" / "no"</code>. Tài sản tự sinh lịch khấu hao đường thẳng theo <code>lifeYears</code> và tháng bắt đầu <code>depStart</code> — đúng như khi nhập tay ở mục Danh mục. Dòng sao kê chỉ lưu vào kho sao kê để đối chiếu ở Sổ nhật ký ngân hàng, không tự tạo thu/chi. <b>Lưu ý:</b> file dữ liệu tổng hợp chứa số liệu thật — chỉ giữ trên máy của Daisy, <b>không đưa lên GitHub công khai</b> (file HTML này không chứa sẵn số liệu nào).</div>'
+    + '<div class="cols"><div><label>1) Chọn file dữ liệu tổng hợp (.json)</label><input type="file" class="fileinp" id="bulkFile" accept=".json,application/json" />'
+    + '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bulkTpl" type="button">Tải file JSON mẫu</button></div>'
+    + '<div class="muted" style="margin-top:6px">Chưa rõ cấu trúc? Tải file JSON mẫu (dữ liệu trung tính, ghi chữ MẪU) để xem đúng tên trường của từng nhóm, rồi điền dữ liệu thật theo đúng mẫu đó.</div></div>'
+    + '<div><label>2) Hoặc dán nội dung file JSON vào đây</label><textarea id="bulkPaste" rows="6" placeholder="Dán toàn bộ nội dung file dữ liệu tổng hợp (.json)…"></textarea><div style="margin-top:8px"><button class="btn" id="bulkPreviewPaste" type="button">Xem trước dữ liệu đã dán</button></div></div></div>'
+    + '<div id="bulkPreview"></div></div></div>';
 
   v.innerHTML = html;
 
@@ -1218,6 +1370,68 @@ function vImport(v){
     };
     rd.readAsText(file);
     this.value = "";
+  });
+
+  /* ---- 5) File dữ liệu tổng hợp JSON (hlt-bulk-data) ---- */
+  var bulkPlanCur = null;
+  var BULK_GROUPS = [["partners","Đối tác"],["vehicles","Xe & tài xế"],["salesInvoices","Hóa đơn bán ra"],["purchaseInvoices","Hóa đơn mua vào"],["bankLines","Sao kê ngân hàng"],["assets","Tài sản & khấu hao"],["expenses","Chi phí"],["docs","Kho chứng từ"]];
+  function drawBulkPreview(){
+    var box = $("#bulkPreview"); if (!box) return;
+    if (!bulkPlanCur){ box.innerHTML = ""; return; }
+    var totNew = 0, totAll = 0;
+    var rowsHtml = BULK_GROUPS.map(function(g){
+      var items = bulkPlanCur[g[0]] || [];
+      var nw = items.filter(function(i){ return !i.dup; }).length;
+      var dp = items.length - nw;
+      totNew += nw; totAll += items.length;
+      return "<tr><td>" + g[1] + '</td><td class="num">' + items.length + '</td><td class="num pos"><b>' + nw + '</b></td><td class="num">' + (dp ? dp : "—") + "</td></tr>";
+    }).join("");
+    box.innerHTML = '<h4 style="margin:12px 0 6px">Xem trước file dữ liệu tổng hợp — tổng ' + totAll + ' dòng · ' + totNew + ' dòng mới sẽ nạp · ' + (totAll - totNew) + ' dòng trùng bỏ qua</h4>'
+      + '<div class="twrap"><table style="min-width:0"><thead><tr><th>Nhóm dữ liệu</th><th class="num">Tổng dòng</th><th class="num">Mới (sẽ nạp)</th><th class="num">Trùng (bỏ qua)</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div>'
+      + '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="bulkDo" type="button"' + (totNew ? "" : " disabled") + '>Import ' + totNew + ' dòng mới vào phần mềm</button><button class="btn" id="bulkClear" type="button">Hủy xem trước</button></div>'
+      + '<div class="muted" style="margin-top:6px">Đối chiếu số dòng từng nhóm với file trước khi bấm Import. Sau khi nạp: đối tác / xe / tài sản vào tab Danh mục, hóa đơn vào 2 tab Hóa đơn, sao kê vào phần đối chiếu ở Sổ nhật ký ngân hàng, chi phí vào tab Chi phí, chứng từ vào tab Kho chứng từ — khấu hao tài sản tự chạy vào báo cáo như nhập tay.</div>';
+    $("#bulkClear").addEventListener("click", function(){ bulkPlanCur = null; drawBulkPreview(); });
+    var bd = $("#bulkDo");
+    if (bd) bd.addEventListener("click", function(){
+      var res = applyBulkPlan(bulkPlanCur);
+      audit("Import file dữ liệu tổng hợp JSON: " + res.total + " dòng mới (" + res.detail + ")"); saveDB();
+      bulkPlanCur = null;
+      toast("Đã nạp " + res.total + " dòng mới" + (res.detail ? " — " + res.detail : "") + ". Dòng trùng đã bỏ qua.");
+      render();
+    });
+  }
+  function loadBulkText(text){
+    try {
+      var data = parseBulkText(text);
+      bulkPlanCur = bulkPlan(data);
+      drawBulkPreview();
+      var box = $("#bulkPreview");
+      if (box && box.scrollIntoView) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } catch(e) {
+      bulkPlanCur = null; drawBulkPreview();
+      toast(e && e.message === "type"
+        ? "File JSON này không phải file dữ liệu tổng hợp (thiếu meta.type = \"hlt-bulk-data\"). Nếu đây là file sao lưu của phần mềm, hãy nạp bằng nút “Nhập dữ liệu” ở thanh trên cùng."
+        : "Không đọc được nội dung JSON — kiểm tra lại file có đúng định dạng JSON không.");
+    }
+  }
+  var bfile = $("#bulkFile");
+  if (bfile) bfile.addEventListener("change", function(){
+    var file = this.files && this.files[0]; if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function(){ loadBulkText(rd.result); };
+    rd.readAsText(file);
+    this.value = "";
+  });
+  var bpaste = $("#bulkPreviewPaste");
+  if (bpaste) bpaste.addEventListener("click", function(){
+    var txt = $("#bulkPaste").value;
+    if (!txt.trim()){ toast("Chưa dán nội dung JSON nào."); return; }
+    loadBulkText(txt);
+  });
+  var btpl = $("#bulkTpl");
+  if (btpl) btpl.addEventListener("click", function(){
+    download("mau-du-lieu-tong-hop.json", JSON.stringify(bulkSampleData(), null, 2), "application/json");
+    toast("Đã tải file JSON mẫu (dữ liệu trung tính) — điền dữ liệu thật theo đúng tên trường trong file rồi nạp ở mục ⑤.");
   });
 }
 function bankReconHTML(){
